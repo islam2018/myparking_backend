@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from djongo import models
 from djongo.models import DjongoManager
 
@@ -55,12 +56,10 @@ class Parking(models.Model):
 
 class Automobiliste(models.Model):
     idAutomobiliste = models.IntegerField()
-    nom = models.TextField()
-    prenom = models.TextField()
-    mail = models.TextField()
-    mdpHash = models.TextField()
-    favoris = models.ArrayReferenceField(to=Parking, on_delete=models.DO_NOTHING, default=None)
-
+    nom = models.TextField( default='')
+    prenom = models.TextField( default='')
+    auth = models.OneToOneField(to=User, on_delete=models.CASCADE, default=None, related_name='profile')
+    favoris = models.ArrayReferenceField(to=Parking, on_delete=models.DO_NOTHING, blank=True)
     objects = DjongoManager()
 
 

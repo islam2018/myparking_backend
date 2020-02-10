@@ -1,9 +1,11 @@
+from django.contrib.auth.models import User, Permission, Group
+from django.db.models import TextField
 from rest_framework import serializers
-from .models import Etage, Parking, Horaire, Tarif, Equipement
+from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste
+from django.contrib.auth.hashers import make_password
 
 
 class EtageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Etage
         fields = ['idEtage', 'nbPlaces']
@@ -20,6 +22,7 @@ class TarifSerializer(serializers.ModelSerializer):
         model = Tarif
         fields = ['idTarif', 'duree', 'prix']
 
+
 class EquipementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Equipement
@@ -32,12 +35,12 @@ class ParkingSerializer(serializers.ModelSerializer):
     tarifs = TarifSerializer(many=True)
     equipements = EquipementSerializer(many=True)
 
-
     class Meta:
         model = Parking
         fields = [
-        'idParking', 'nbEtages', 'nbPlaces', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaire', 'etages','tarifs',
-        'equipements',]
+            'idParking', 'nbEtages', 'nbPlaces', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaire',
+            'etages', 'tarifs',
+            'equipements', ]
 
     def create(self, validated_data):
         etages_data = validated_data.pop('etages')
@@ -54,7 +57,7 @@ class ParkingSerializer(serializers.ModelSerializer):
             HeureOuverture=horaire_data['HeureOuverture'],
             HeureFermeture=horaire_data['HeureFermeture'])
         for e in etages_data:
-            etages_list.append(Etage(idEtage=e['idEtage'],nbPlaces=e['nbPlaces']))
+            etages_list.append(Etage(idEtage=e['idEtage'], nbPlaces=e['nbPlaces']))
         for t in tarifs_data:
             tarifs_list.append(Tarif(idTarif=t['idTarif'], duree=t['duree'], prix=t['prix']))
         for q in equipements_data:
@@ -65,3 +68,50 @@ class ParkingSerializer(serializers.ModelSerializer):
         parking.save()
 
         return parking
+
+
+
+
+
+class AutomobilisteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Automobiliste
+        fields = ['idAutomobiliste', 'nom', 'prenom']
+
+
+class UserSerializer(serializers.HyperlinkedModelSerializer):
+    profile = AutomobilisteSerializer(required=True)
+
+    class Meta:
+        model = User
+        fields = ['email', 'username', 'password', 'profile']
+        extra_kwargs = {'password': {'write_only': True}}
+
+
+    def create(self, validated_data):
+        profile_data = validated_data.pop('profile')
+        password = validated_data.pop('password')
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        au = Automobiliste(auth=user, **profile_data)
+        au.save()
+        return user
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile')
+        profile = instance.profile
+
+        instance.email = validated_data.get('email', instance.email)
+        instance.save()
+
+        profile.idAutomobiliste = profile_data.get('idAutomobiliste', profile.idAutomobiliste)
+        profile.nom = profile_data.get('nom', profile.nom)
+        profile.prenom = profile_data.get('prenom', profile.prenom)
+
+        profile.save()
+
+        return instance
+
+
