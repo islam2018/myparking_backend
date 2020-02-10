@@ -1,4 +1,5 @@
 from djongo import models
+from djongo.models import DjongoManager
 
 
 class Tarif(models.Model):
@@ -17,18 +18,21 @@ class Horaire(models.Model):
     HeureOuverture = models.TimeField()
     HeureFermeture = models.TimeField()
 
-    class Meta:
-        abstract = True
+    objects = DjongoManager()
+
 
 
 class Etage(models.Model):
     idEtage = models.IntegerField()
     nbPlaces = models.IntegerField()
 
+    objects = DjongoManager()
+
 
 class Paiment(models.Model):
     type = models.TextField()
 
+    objects = DjongoManager()
     def __str__(self):
         return self.type
 
@@ -39,14 +43,15 @@ class Parking(models.Model):
     nbPlaces = models.IntegerField()
     nom = models.TextField()
     adresse = models.TextField()
-    imageUrl: models.TextField()
-    lattitude: models.FloatField()
-    longitude: models.FloatField()
+    imageUrl= models.TextField()
+    lattitude= models.FloatField()
+    longitude= models.FloatField()
     horaire = models.EmbeddedField(model_container=Horaire)
-    etages = models.ArrayReferenceField(to=Etage, on_delete=models.CASCADE, default=None)
-    tarifs = models.ArrayReferenceField(to=Tarif, on_delete=models.CASCADE, default=None)
-    equipements = models.ArrayReferenceField(to=Equipement, on_delete=models.CASCADE, default=None)
+    etages = models.ArrayField(model_container=Etage)
+    tarifs = models.ArrayField(model_container=Tarif)
+    equipements = models.ArrayField(model_container=Equipement)
 
+    objects = DjongoManager()
 
 class Automobiliste(models.Model):
     idAutomobiliste = models.IntegerField()
@@ -55,6 +60,8 @@ class Automobiliste(models.Model):
     mail = models.TextField()
     mdpHash = models.TextField()
     favoris = models.ArrayReferenceField(to=Parking, on_delete=models.DO_NOTHING, default=None)
+
+    objects = DjongoManager()
 
 
 class Reservation(models.Model):
@@ -68,8 +75,12 @@ class Reservation(models.Model):
     automobiliste = models.OneToOneField(Automobiliste, on_delete=models.CASCADE)
     paiement = models.OneToOneField(Paiment, on_delete=models.CASCADE)
 
+    objects = DjongoManager()
+
 
 class Evaluation(models.Model):
     idEvaluation = models.IntegerField()
     note = models.IntegerField()
     automobiliste = models.EmbeddedField(model_container=Automobiliste)
+
+    objects = DjongoManager()
