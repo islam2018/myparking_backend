@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User, Permission, Group
 from django.db.models import TextField
 from rest_framework import serializers
-from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste
+from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent
 from django.contrib.auth.hashers import make_password
 
 
@@ -70,24 +70,19 @@ class ParkingSerializer(serializers.ModelSerializer):
         return parking
 
 
-
-
-
-class AutomobilisteSerializer(serializers.ModelSerializer):
-
+class AutomobilisteProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Automobiliste
         fields = ['idAutomobiliste', 'nom', 'prenom']
 
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
-    profile = AutomobilisteSerializer(required=True)
+class AutomobilisteSerializer(serializers.HyperlinkedModelSerializer):
+    driverProfile = AutomobilisteProfileSerializer(required=True)
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'password', 'profile']
+        fields = ['email', 'username', 'password', 'driverProfile']
         extra_kwargs = {'password': {'write_only': True}}
-
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
@@ -115,3 +110,41 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         return instance
 
 
+class AgentProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Agent
+        fields = ['idAgent', 'nom', 'prenom', 'parking']
+
+
+class AgentSerializer(serializers.HyperlinkedModelSerializer):
+    agentProfile = AgentProfileSerializer(required=True)
+    class Meta:
+        model = User
+        fields = ['email', 'username', 'password', 'agentProfile']
+        extra_kwargs = {'password': {'write_only': True}}
+
+
+    def create(self, validated_data):
+        profile_data = validated_data.pop('agentProfile')
+        password = validated_data.pop('password')
+        user = User(username=validated_data.pop('username'),email=validated_data.pop('email'))
+        user.set_password(password)
+        user.save()
+        agent = Agent(auth=user, **profile_data)
+        agent.save()
+        return user
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('agentProfile')
+        profile = instance.profile
+
+        instance.email = validated_data.get('email', instance.email)
+        instance.save()
+
+        profile.idAutomobiliste = profile_data.get('idAgent', profile.idAutomobiliste)
+        profile.nom = profile_data.get('nom', profile.nom)
+        profile.prenom = profile_data.get('prenom', profile.prenom)
+        profile.parking = profile_data.get('parking', profile.parking)
+        profile.save()
+
+        return instance

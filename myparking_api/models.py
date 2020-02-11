@@ -22,7 +22,6 @@ class Horaire(models.Model):
     objects = DjongoManager()
 
 
-
 class Etage(models.Model):
     idEtage = models.IntegerField()
     nbPlaces = models.IntegerField()
@@ -34,6 +33,7 @@ class Paiment(models.Model):
     type = models.TextField()
 
     objects = DjongoManager()
+
     def __str__(self):
         return self.type
 
@@ -44,9 +44,9 @@ class Parking(models.Model):
     nbPlaces = models.IntegerField()
     nom = models.TextField()
     adresse = models.TextField()
-    imageUrl= models.TextField()
-    lattitude= models.FloatField()
-    longitude= models.FloatField()
+    imageUrl = models.TextField()
+    lattitude = models.FloatField()
+    longitude = models.FloatField()
     horaire = models.EmbeddedField(model_container=Horaire)
     etages = models.ArrayField(model_container=Etage)
     tarifs = models.ArrayField(model_container=Tarif)
@@ -54,12 +54,22 @@ class Parking(models.Model):
 
     objects = DjongoManager()
 
+
 class Automobiliste(models.Model):
     idAutomobiliste = models.IntegerField()
-    nom = models.TextField( default='')
-    prenom = models.TextField( default='')
-    auth = models.OneToOneField(to=User, on_delete=models.CASCADE, default=None, related_name='profile')
+    nom = models.TextField(default='')
+    prenom = models.TextField(default='')
+    auth = models.OneToOneField(to=User, on_delete=models.CASCADE, default=None, related_name='driverProfile')
     favoris = models.ArrayReferenceField(to=Parking, on_delete=models.DO_NOTHING, blank=True)
+    objects = DjongoManager()
+
+
+class Agent(models.Model):
+    idAgent = models.IntegerField()
+    nom = models.TextField(default='')
+    prenom = models.TextField(default='')
+    auth = models.OneToOneField(to=User, on_delete=models.CASCADE, default=None, related_name='agentProfile')
+    parking = models.TextField()
     objects = DjongoManager()
 
 
