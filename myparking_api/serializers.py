@@ -1,6 +1,10 @@
 from django.contrib.auth.models import User, Permission, Group
 from django.db.models import TextField
 from rest_framework import serializers
+from rolepermissions.roles import assign_role
+
+from myparking import roles
+from myparking.roles import Driver
 from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent
 from django.contrib.auth.hashers import make_password
 
@@ -85,17 +89,18 @@ class AutomobilisteSerializer(serializers.HyperlinkedModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        profile_data = validated_data.pop('profile')
+        profile_data = validated_data.pop('driverProfile')
         password = validated_data.pop('password')
         user = User(**validated_data)
         user.set_password(password)
         user.save()
+        assign_role(user, roles.Driver)
         au = Automobiliste(auth=user, **profile_data)
         au.save()
         return user
 
     def update(self, instance, validated_data):
-        profile_data = validated_data.pop('profile')
+        profile_data = validated_data.pop('driverProfile')
         profile = instance.profile
 
         instance.email = validated_data.get('email', instance.email)
@@ -130,6 +135,7 @@ class AgentSerializer(serializers.HyperlinkedModelSerializer):
         user = User(username=validated_data.pop('username'),email=validated_data.pop('email'))
         user.set_password(password)
         user.save()
+        assign_role(user, roles.Agent)
         agent = Agent(auth=user, **profile_data)
         agent.save()
         return user
