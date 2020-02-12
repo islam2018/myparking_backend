@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from djongo import models
 from djongo.models import DjongoManager
+from django import forms
 
 
 class Tarif(models.Model):
@@ -28,6 +29,12 @@ class Etage(models.Model):
 
     objects = DjongoManager()
 
+class EtageForm(forms.ModelForm):
+    class Meta:
+        model = Etage
+        fields = (
+            'idEtage', 'nbPlaces'
+        )
 
 class Paiment(models.Model):
     type = models.TextField()
@@ -48,9 +55,9 @@ class Parking(models.Model):
     lattitude = models.FloatField()
     longitude = models.FloatField()
     horaire = models.EmbeddedField(model_container=Horaire)
-    etages = models.ArrayField(model_container=Etage)
-    tarifs = models.ArrayField(model_container=Tarif)
-    equipements = models.ArrayField(model_container=Equipement)
+    etages = models.ArrayReferenceField(to=Etage, on_delete=models.DO_NOTHING, blank=True)
+    tarifs = models.ArrayReferenceField(to=Tarif, on_delete=models.DO_NOTHING, blank=True)
+    equipements = models.ArrayReferenceField(to=Equipement, on_delete=models.DO_NOTHING, blank=True)
 
     objects = DjongoManager()
 
