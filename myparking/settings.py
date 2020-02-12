@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 import datetime
 import os
+import django_heroku
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 
@@ -136,4 +137,4 @@ REST_FRAMEWORK = {
 }
 
 ROLEPERMISSIONS_MODULE = 'myparking.roles'
-
+django_heroku.settings(locals())
