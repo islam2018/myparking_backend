@@ -13,7 +13,3 @@ class Agent(AbstractUserRole):
     }
 
 
-class Admin(AbstractUserRole):
-    available_permissions = {
-
-    }

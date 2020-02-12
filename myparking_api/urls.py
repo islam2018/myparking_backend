@@ -14,7 +14,7 @@ router.register('register/agent', views.RegistrationAgentView)
 
 urlpatterns = [
     path('', include(router.urls)),
-    # path('api-auth/', include('rest_framework.urls')),
+    path('api-auth/', include('rest_framework.urls')),
     path('api/driver/login', DriverLoginViewJWT.as_view()),
     path('api/agent/login', AgentLoginViewJWT.as_view()),
     path('api/token/refresh', TokenRefreshView.as_view())
