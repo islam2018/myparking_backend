@@ -20,16 +20,18 @@ class EtageView(viewsets.ModelViewSet):
 class ParkingView(viewsets.ModelViewSet):
     queryset = Parking.objects.all()
     serializer_class = ParkingSerializer
-    def get_permissions(self):
-        permission_classes = []
-        print("***********************",has_role(self.request.user,Agent))
-        if self.action == 'create' or self.action == 'update' or self.action == 'partial_update' or self.action == 'destroy':
-            permission_classes = [IsAdminUser]
-        elif self.action == 'retrieve' :
-            permission_classes = [IsAgent]
-        elif self.action == 'list' :
-            permission_classes = [IsDriver]
-        return [permission() for permission in permission_classes]
+    permission_classes = []
+    authentication_classes = []
+    # def get_permissions(self):
+    #     permission_classes = []
+    #     print("***********************",has_role(self.request.user,Agent))
+    #     if self.action == 'create' or self.action == 'update' or self.action == 'partial_update' or self.action == 'destroy':
+    #         permission_classes = [IsAdminUser]
+    #     elif self.action == 'retrieve' :
+    #         permission_classes = [IsAgent]
+    #     elif self.action == 'list' :
+    #         permission_classes = [IsDriver]
+    #     return [permission() for permission in permission_classes]
 
 
 class RegistrationAutomobilisteView(viewsets.ModelViewSet):

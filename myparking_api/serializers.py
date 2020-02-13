@@ -1,5 +1,8 @@
+from datetime import datetime, time
+
 from django.contrib.auth.models import User, Permission, Group
 from django.db.models import TextField
+from django.utils.timezone import now
 from rest_framework import serializers
 from rolepermissions.roles import assign_role
 
@@ -38,13 +41,28 @@ class ParkingSerializer(serializers.ModelSerializer):
     etages = EtageSerializer(many=True)
     tarifs = TarifSerializer(many=True)
     equipements = EquipementSerializer(many=True)
+    ouvert = serializers.SerializerMethodField()
 
     class Meta:
         model = Parking
         fields = [
             'idParking', 'nbEtages', 'nbPlaces', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaire',
             'etages', 'tarifs',
-            'equipements', ]
+            'equipements', 'ouvert', ]
+
+
+
+    def get_ouvert(self, obj):
+        check_time =  datetime.utcnow().time()
+        begin_time = obj.horaire.HeureOuverture
+        end_time =  obj.horaire.HeureFermeture
+        ouvert_status = False
+        if begin_time < end_time:
+            ouvert_status = check_time >= begin_time and check_time <= end_time
+        else:  # crosses midnight
+            ouvert_status = check_time >= begin_time or check_time <= end_time
+        return 'Ouvert' if ouvert_status else 'Fermé'
+
 
     def create(self, validated_data):
         etages_data = validated_data.pop('etages')
@@ -123,16 +141,16 @@ class AgentProfileSerializer(serializers.ModelSerializer):
 
 class AgentSerializer(serializers.HyperlinkedModelSerializer):
     agentProfile = AgentProfileSerializer(required=True)
+
     class Meta:
         model = User
         fields = ['email', 'username', 'password', 'agentProfile']
         extra_kwargs = {'password': {'write_only': True}}
 
-
     def create(self, validated_data):
         profile_data = validated_data.pop('agentProfile')
         password = validated_data.pop('password')
-        user = User(username=validated_data.pop('username'),email=validated_data.pop('email'))
+        user = User(username=validated_data.pop('username'), email=validated_data.pop('email'))
         user.set_password(password)
         user.save()
         assign_role(user, roles.Agent)
