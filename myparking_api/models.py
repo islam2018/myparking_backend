@@ -5,27 +5,43 @@ from django import forms
 
 
 class Tarif(models.Model):
-    idTarif = models.IntegerField()
+    idTarif =  models.AutoField(primary_key=True)
     duree = models.FloatField()
     prix = models.FloatField()
 
+    @property
+    def idTarif(self):
+        return self.id
+
 
 class Equipement(models.Model):
-    idEquipement = models.IntegerField()
+    idEquipement =  models.AutoField(primary_key=True)
     designation = models.TextField()
+
+    @property
+    def idEquipement(self):
+        return self.id
 
 
 class Horaire(models.Model):
-    idHoraire = models.IntegerField()
+    idHoraire  = models.AutoField(primary_key=True)
     HeureOuverture = models.TimeField()
     HeureFermeture = models.TimeField()
+
+    @property
+    def idHoraire(self):
+        return self.id
 
     objects = DjongoManager()
 
 
 class Etage(models.Model):
-    idEtage = models.IntegerField()
+    idEtage =  models.AutoField(primary_key=True)
     nbPlaces = models.IntegerField()
+
+    @property
+    def idEtage(self):
+        return self.id
 
     objects = DjongoManager()
 
@@ -33,7 +49,7 @@ class EtageForm(forms.ModelForm):
     class Meta:
         model = Etage
         fields = (
-            'idEtage', 'nbPlaces'
+             'nbPlaces',
         )
 
 class Paiment(models.Model):
@@ -41,12 +57,10 @@ class Paiment(models.Model):
 
     objects = DjongoManager()
 
-    def __str__(self):
-        return self.type
 
 
 class Parking(models.Model):
-    idParking = models.IntegerField()
+    idParking = models.AutoField(primary_key=True)
     nbEtages = models.IntegerField()
     nbPlaces = models.IntegerField()
     nom = models.TextField()
@@ -58,6 +72,10 @@ class Parking(models.Model):
     etages = models.ArrayReferenceField(to=Etage, on_delete=models.DO_NOTHING, blank=True)
     tarifs = models.ArrayReferenceField(to=Tarif, on_delete=models.DO_NOTHING, blank=True)
     equipements = models.ArrayReferenceField(to=Equipement, on_delete=models.DO_NOTHING, blank=True)
+
+    @property
+    def idParking(self):
+        return self.id
 
     objects = DjongoManager()
 

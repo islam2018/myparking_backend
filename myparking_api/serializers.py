@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, time
 
 from django.contrib.auth.models import User, Permission, Group
@@ -10,30 +11,44 @@ from myparking import roles
 from myparking.roles import Driver
 from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent
 from django.contrib.auth.hashers import make_password
+import requests
 
 
 class EtageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Etage
         fields = ['idEtage', 'nbPlaces']
+        extra_kwargs = {
+            'idEtage': {'read_only': True}
+        }
 
 
 class HoraireSerializer(serializers.ModelSerializer):
     class Meta:
         model = Horaire
         fields = ['idHoraire', 'HeureOuverture', 'HeureFermeture']
+        extra_kwargs = {
+            'idHoraire': {'read_only': True}
+        }
 
 
 class TarifSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tarif
         fields = ['idTarif', 'duree', 'prix']
+        extra_kwargs = {
+            'idTarif': {'read_only': True}
+        }
+
 
 
 class EquipementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Equipement
         fields = ['idEquipement', 'designation']
+        extra_kwargs = {
+            'idEquipement': {'read_only': True}
+        }
 
 
 class ParkingSerializer(serializers.ModelSerializer):
@@ -42,14 +57,43 @@ class ParkingSerializer(serializers.ModelSerializer):
     tarifs = TarifSerializer(many=True)
     equipements = EquipementSerializer(many=True)
     ouvert = serializers.SerializerMethodField()
+    routeInfo = serializers.SerializerMethodField()
 
     class Meta:
         model = Parking
         fields = [
             'idParking', 'nbEtages', 'nbPlaces', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaire',
             'etages', 'tarifs',
-            'equipements', 'ouvert', ]
+            'equipements', 'ouvert', 'routeInfo' ]
+        extra_kwargs = {
+            'idParking': {'read_only': True},
+            'ouvert': {'read_only': True},
+            'routeInfo': {'read_only': True}
+        }
 
+
+    def get_routeInfo(self,obj):
+        request = self.context['request']
+        try:
+
+            start  = request.query_params['start']
+            destination =   str(obj.lattitude)+","+ str(obj.longitude)
+            print(start, "-->", destination)
+            response = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json", params={
+                'apiKey': 'SnEjiUueUMbL4zeFjvfi6vx4JMWGkdCrof7QDZLQWoY',
+                'start0': start,
+                'destination0': destination,
+                'mode': 'balanced;car;traffic:enabled',
+                'summaryAttributes': 'traveltime,distance'
+            })
+            json_data= json.loads(response.text)
+            print(json_data)
+            return {
+                'distance': json_data['response']['matrixEntry'][0]['summary']['distance'],
+                'travelTime': json_data['response']['matrixEntry'][0]['summary']['travelTime']
+            }
+        except Exception:
+            return None
 
 
     def get_ouvert(self, obj):
@@ -70,23 +114,33 @@ class ParkingSerializer(serializers.ModelSerializer):
         tarifs_data = validated_data.pop('tarifs')
         equipements_data = validated_data.pop('equipements')
         print(etages_data)
-        parking = Parking(**validated_data)
+
         etages_list = []
         tarifs_list = []
         equipements_list = []
-        parking.horaire = Horaire(
-            idHoraire=horaire_data['idHoraire'],
+
+        print(etages_data)
+        for e in etages_data:
+            etageModel = Etage(nbPlaces=e['nbPlaces'])
+            etageModel.save()
+            etages_list.append(etageModel.idEtage)
+        for t in tarifs_data:
+            tarifModel = Tarif( duree=t['duree'], prix=t['prix'])
+            tarifModel.save()
+            tarifs_list.append(tarifModel.idTarif)
+        for q in equipements_data:
+            equipModel = Equipement( designation=q['designation'])
+            equipModel.save()
+            equipements_list.append(equipModel.idEquipement)
+        parking = Parking(**validated_data)
+        horaire = Horaire(
             HeureOuverture=horaire_data['HeureOuverture'],
             HeureFermeture=horaire_data['HeureFermeture'])
-        for e in etages_data:
-            etages_list.append(Etage(idEtage=e['idEtage'], nbPlaces=e['nbPlaces']))
-        for t in tarifs_data:
-            tarifs_list.append(Tarif(idTarif=t['idTarif'], duree=t['duree'], prix=t['prix']))
-        for q in equipements_data:
-            equipements_list.append(Equipement(idEquipement=q['idEquipement'], designation=q['designation']))
-        parking.etages = etages_list
-        parking.tarifs = tarifs_list
-        parking.equipements = equipements_list
+        horaire.save()
+        parking.horaire = horaire
+        parking.etages_id = etages_list
+        parking.tarifs_id = tarifs_list
+        parking.equipements_id = equipements_list
         parking.save()
 
         return parking

@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
+
 from rest_framework import viewsets, permissions, status
 from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rolepermissions.checkers import has_role
 
@@ -22,6 +24,13 @@ class ParkingView(viewsets.ModelViewSet):
     serializer_class = ParkingSerializer
     permission_classes = []
     authentication_classes = []
+
+    def getOneParking(self, request, idParking=None):
+        parking = get_object_or_404(self.queryset, id=idParking)
+        serializer = ParkingSerializer(parking, context={'request': request})
+        return Response(serializer.data)
+
+
     # def get_permissions(self):
     #     permission_classes = []
     #     print("***********************",has_role(self.request.user,Agent))

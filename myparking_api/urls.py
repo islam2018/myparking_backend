@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
-from django.urls import path, include
+from django.urls import include, path
 from . import views
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -15,7 +15,9 @@ router.register('register/agent', views.RegistrationAgentView)
 urlpatterns = [
     path('', include(router.urls)),
     path('api-auth/', include('rest_framework.urls')),
+    path('parking/<idParking>', views.ParkingView.as_view({'get': 'getOneParking'}), name='OneParking'),
     path('api/driver/login', DriverLoginViewJWT.as_view()),
     path('api/agent/login', AgentLoginViewJWT.as_view()),
     path('api/token/refresh', TokenRefreshView.as_view())
 ]
+
