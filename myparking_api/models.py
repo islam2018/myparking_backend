@@ -25,6 +25,7 @@ class Equipement(models.Model):
 
 class Horaire(models.Model):
     idHoraire  = models.AutoField(primary_key=True)
+    Jours = models.TextField()
     HeureOuverture = models.TimeField()
     HeureFermeture = models.TimeField()
 
@@ -41,6 +42,16 @@ class Etage(models.Model):
 
     @property
     def idEtage(self):
+        return self.id
+
+    objects = DjongoManager()
+
+class Terme(models.Model):
+    idTerme =  models.AutoField(primary_key=True)
+    contenu = models.TextField()
+
+    @property
+    def idTerme(self):
         return self.id
 
     objects = DjongoManager()
@@ -68,10 +79,11 @@ class Parking(models.Model):
     imageUrl = models.TextField()
     lattitude = models.FloatField()
     longitude = models.FloatField()
-    horaire = models.EmbeddedField(model_container=Horaire)
+    horaires = models.ArrayReferenceField(to=Horaire, on_delete=models.CASCADE, blank=True)
     etages = models.ArrayReferenceField(to=Etage, on_delete=models.DO_NOTHING, blank=True)
     tarifs = models.ArrayReferenceField(to=Tarif, on_delete=models.DO_NOTHING, blank=True)
     equipements = models.ArrayReferenceField(to=Equipement, on_delete=models.DO_NOTHING, blank=True)
+    termes = models.ArrayReferenceField(to=Terme, on_delete=models.DO_NOTHING, blank=True)
 
     @property
     def idParking(self):

@@ -9,7 +9,7 @@ from rolepermissions.roles import assign_role
 
 from myparking import roles
 from myparking.roles import Driver
-from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent
+from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent, Terme
 from django.contrib.auth.hashers import make_password
 import requests
 
@@ -22,11 +22,19 @@ class EtageSerializer(serializers.ModelSerializer):
             'idEtage': {'read_only': True}
         }
 
+class TermeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Terme
+        fields = ['idTerme', 'contenu']
+        extra_kwargs = {
+            'idTerme': {'read_only': True}
+        }
+
 
 class HoraireSerializer(serializers.ModelSerializer):
     class Meta:
         model = Horaire
-        fields = ['idHoraire', 'HeureOuverture', 'HeureFermeture']
+        fields = ['idHoraire', 'Jours', 'HeureOuverture', 'HeureFermeture']
         extra_kwargs = {
             'idHoraire': {'read_only': True}
         }
@@ -52,19 +60,19 @@ class EquipementSerializer(serializers.ModelSerializer):
 
 
 class ParkingSerializer(serializers.ModelSerializer):
-    horaire = HoraireSerializer()
+    horaires = HoraireSerializer(many=True)
     etages = EtageSerializer(many=True)
     tarifs = TarifSerializer(many=True)
     equipements = EquipementSerializer(many=True)
+    termes = TermeSerializer(many=True)
     ouvert = serializers.SerializerMethodField()
     routeInfo = serializers.SerializerMethodField()
 
     class Meta:
         model = Parking
         fields = [
-            'idParking', 'nbEtages', 'nbPlaces', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaire',
-            'etages', 'tarifs',
-            'equipements', 'ouvert', 'routeInfo' ]
+            'idParking', 'nbEtages', 'nbPlaces', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaires',
+            'etages', 'tarifs', 'termes', 'equipements', 'ouvert', 'routeInfo']
         extra_kwargs = {
             'idParking': {'read_only': True},
             'ouvert': {'read_only': True},
@@ -97,29 +105,36 @@ class ParkingSerializer(serializers.ModelSerializer):
 
 
     def get_ouvert(self, obj):
-        check_time =  datetime.utcnow().time()
-        begin_time = obj.horaire.HeureOuverture
-        end_time =  obj.horaire.HeureFermeture
-        ouvert_status = False
-        if begin_time < end_time:
-            ouvert_status = check_time >= begin_time and check_time <= end_time
-        else:  # crosses midnight
-            ouvert_status = check_time >= begin_time or check_time <= end_time
+        # check_time =  datetime.utcnow().time()
+        # begin_time = obj.horaire.HeureOuverture
+        # end_time =  obj.horaire.HeureFermeture
+        ouvert_status = True
+        # if begin_time < end_time:
+        #     ouvert_status = check_time >= begin_time and check_time <= end_time
+        # else:  # crosses midnight
+        #     ouvert_status = check_time >= begin_time or check_time <= end_time
         return 'Ouvert' if ouvert_status else 'Fermé'
 
 
     def create(self, validated_data):
         etages_data = validated_data.pop('etages')
-        horaire_data = validated_data.pop('horaire')
+        horaires_data = validated_data.pop('horaires')
         tarifs_data = validated_data.pop('tarifs')
         equipements_data = validated_data.pop('equipements')
+        termes_data = validated_data.pop('termes')
         print(etages_data)
 
         etages_list = []
         tarifs_list = []
+        horaires_list = []
+        termes_list = []
         equipements_list = []
 
         print(etages_data)
+        for h in horaires_data:
+            horaireModel = Horaire(Jours=h['Jours'], HeureFermeture=h['HeureFermeture'], HeureOuverture=h['HeureOuverture'])
+            horaireModel.save()
+            horaires_list.append(horaireModel.idHoraire)
         for e in etages_data:
             etageModel = Etage(nbPlaces=e['nbPlaces'])
             etageModel.save()
@@ -132,14 +147,15 @@ class ParkingSerializer(serializers.ModelSerializer):
             equipModel = Equipement( designation=q['designation'])
             equipModel.save()
             equipements_list.append(equipModel.idEquipement)
+        for term in termes_data:
+            termModel = Terme(contenu=term['contenu'])
+            termModel.save()
+            termes_list.append(termModel.idTerme)
         parking = Parking(**validated_data)
-        horaire = Horaire(
-            HeureOuverture=horaire_data['HeureOuverture'],
-            HeureFermeture=horaire_data['HeureFermeture'])
-        horaire.save()
-        parking.horaire = horaire
+        parking.horaires_id = horaires_list
         parking.etages_id = etages_list
         parking.tarifs_id = tarifs_list
+        parking.termes_id = termes_list
         parking.equipements_id = equipements_list
         parking.save()
 
