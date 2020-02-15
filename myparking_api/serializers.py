@@ -226,3 +226,11 @@ class AgentSerializer(serializers.HyperlinkedModelSerializer):
         profile.save()
 
         return instance
+
+class AdminSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['email', 'username', 'password', 'first_name', 'last_name']
+        extra_kwargs = {'password': {'write_only': True}}
+

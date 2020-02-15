@@ -11,7 +11,7 @@ from rolepermissions.checkers import has_role
 from myparking.permissions import IsAgent, IsDriver
 from myparking.roles import Driver, Agent
 from .models import Etage, Parking, Automobiliste
-from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer
+from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer
 
 
 class EtageView(viewsets.ModelViewSet):
@@ -65,8 +65,13 @@ class DriverLoginViewJWT(TokenObtainPairView):
 
         if response.status_code == status.HTTP_200_OK:
             user = get_user_model().objects.get(username=request.data[get_user_model().USERNAME_FIELD])
-            serialized_user = self.user_serializer_class(user)
-            response.data.update(serialized_user.data)
+            if ((not has_role(user, IsAdminUser)) and has_role(user,Driver)):
+                serialized_user = self.user_serializer_class(user)
+                response.data.update(serialized_user.data)
+            else:
+                response = Response({
+                    'detail': 'You are not allowed to perform this action'
+                }, status.HTTP_403_FORBIDDEN)
         return response
 
 
@@ -78,6 +83,29 @@ class AgentLoginViewJWT(TokenObtainPairView):
 
         if response.status_code == status.HTTP_200_OK:
             user = get_user_model().objects.get(username=request.data[get_user_model().USERNAME_FIELD])
-            serialized_user = self.user_serializer_class(user)
-            response.data.update(serialized_user.data)
+            if ((not has_role(user, IsAdminUser)) and has_role(user,Agent)):
+                serialized_user = self.user_serializer_class(user)
+                response.data.update(serialized_user.data)
+            else:
+                response = Response({
+                    'detail': 'You are not allowed to perform this action'
+                }, status.HTTP_403_FORBIDDEN)
+
+        return response
+
+class AdminLoginViewJWT(TokenObtainPairView):
+    user_serializer_class = AdminSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == status.HTTP_200_OK:
+            user = get_user_model().objects.get(username=request.data[get_user_model().USERNAME_FIELD])
+            if (not has_role(user, IsAdminUser)):
+                response = Response({
+                    'detail': 'You are not allowed to perform this action'
+                }, status.HTTP_403_FORBIDDEN)
+            else:
+                serialized_user = self.user_serializer_class(user)
+                response.data.update(serialized_user.data)
         return response

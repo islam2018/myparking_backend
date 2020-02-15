@@ -5,7 +5,7 @@ from . import views
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from .views import DriverLoginViewJWT, AgentLoginViewJWT
+from .views import DriverLoginViewJWT, AgentLoginViewJWT, AdminLoginViewJWT
 
 router = routers.DefaultRouter()
 router.register('parking', views.ParkingView)
@@ -18,6 +18,9 @@ urlpatterns = [
     path('parking/<idParking>', views.ParkingView.as_view({'get': 'getOneParking'}), name='OneParking'),
     path('api/driver/login', DriverLoginViewJWT.as_view()),
     path('api/agent/login', AgentLoginViewJWT.as_view()),
+    path('api/admin/login', AdminLoginViewJWT.as_view()),
+
+
     path('api/token/refresh', TokenRefreshView.as_view())
 ]
 
