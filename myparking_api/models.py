@@ -25,7 +25,7 @@ class Equipement(models.Model):
 
 class Horaire(models.Model):
     idHoraire  = models.AutoField(primary_key=True)
-    Jours = models.TextField()
+    jour = models.IntegerField()
     HeureOuverture = models.TimeField()
     HeureFermeture = models.TimeField()
 
@@ -64,7 +64,12 @@ class EtageForm(forms.ModelForm):
         )
 
 class Paiment(models.Model):
+    idPaiment = models.AutoField(primary_key=True)
     type = models.TextField()
+
+    @property
+    def idPaiment(self):
+        return self.id
 
     objects = DjongoManager()
 
@@ -83,7 +88,9 @@ class Parking(models.Model):
     etages = models.ArrayReferenceField(to=Etage, on_delete=models.DO_NOTHING, blank=True)
     tarifs = models.ArrayReferenceField(to=Tarif, on_delete=models.DO_NOTHING, blank=True)
     equipements = models.ArrayReferenceField(to=Equipement, on_delete=models.DO_NOTHING, blank=True)
+    paiments = models.ArrayReferenceField(to=Paiment, on_delete=models.DO_NOTHING, blank=True)
     termes = models.ArrayReferenceField(to=Terme, on_delete=models.DO_NOTHING, blank=True)
+
 
     @property
     def idParking(self):

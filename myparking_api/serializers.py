@@ -9,7 +9,7 @@ from rolepermissions.roles import assign_role
 
 from myparking import roles
 from myparking.roles import Driver
-from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent, Terme
+from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent, Terme, Paiment
 from django.contrib.auth.hashers import make_password
 import requests
 
@@ -21,6 +21,7 @@ class EtageSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'idEtage': {'read_only': True}
         }
+
 
 class TermeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -34,7 +35,7 @@ class TermeSerializer(serializers.ModelSerializer):
 class HoraireSerializer(serializers.ModelSerializer):
     class Meta:
         model = Horaire
-        fields = ['idHoraire', 'Jours', 'HeureOuverture', 'HeureFermeture']
+        fields = ['idHoraire', 'jour', 'HeureOuverture', 'HeureFermeture']
         extra_kwargs = {
             'idHoraire': {'read_only': True}
         }
@@ -49,14 +50,20 @@ class TarifSerializer(serializers.ModelSerializer):
         }
 
 
-
 class EquipementSerializer(serializers.ModelSerializer):
+    idEquipement = serializers.IntegerField(required=False)
     class Meta:
         model = Equipement
         fields = ['idEquipement', 'designation']
-        extra_kwargs = {
-            'idEquipement': {'read_only': True}
-        }
+        # extra_kwargs = {
+        #     'idEquipement': {'read_only': True}
+        # }
+
+class PaimentSerializer(serializers.ModelSerializer):
+    idPaiment = serializers.IntegerField(required=False)
+    class Meta:
+        model = Paiment
+        fields = ['idPaiment', 'type']
 
 
 class ParkingSerializer(serializers.ModelSerializer):
@@ -65,6 +72,7 @@ class ParkingSerializer(serializers.ModelSerializer):
     tarifs = TarifSerializer(many=True)
     equipements = EquipementSerializer(many=True)
     termes = TermeSerializer(many=True)
+    paiments = PaimentSerializer(many=True)
     ouvert = serializers.SerializerMethodField()
     routeInfo = serializers.SerializerMethodField()
 
@@ -72,20 +80,19 @@ class ParkingSerializer(serializers.ModelSerializer):
         model = Parking
         fields = [
             'idParking', 'nbEtages', 'nbPlaces', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaires',
-            'etages', 'tarifs', 'termes', 'equipements', 'ouvert', 'routeInfo']
+            'etages', 'tarifs', 'termes', 'paiments', 'equipements', 'ouvert', 'routeInfo']
         extra_kwargs = {
             'idParking': {'read_only': True},
             'ouvert': {'read_only': True},
             'routeInfo': {'read_only': True}
         }
 
-
-    def get_routeInfo(self,obj):
+    def get_routeInfo(self, obj):
         request = self.context['request']
         try:
 
-            start  = request.query_params['start']
-            destination =   str(obj.lattitude)+","+ str(obj.longitude)
+            start = request.query_params['start']
+            destination = str(obj.lattitude) + "," + str(obj.longitude)
             print(start, "-->", destination)
             response = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json", params={
                 'apiKey': 'SnEjiUueUMbL4zeFjvfi6vx4JMWGkdCrof7QDZLQWoY',
@@ -94,7 +101,7 @@ class ParkingSerializer(serializers.ModelSerializer):
                 'mode': 'balanced;car;traffic:enabled',
                 'summaryAttributes': 'traveltime,distance'
             })
-            json_data= json.loads(response.text)
+            json_data = json.loads(response.text)
             print(json_data)
             return {
                 'distance': json_data['response']['matrixEntry'][0]['summary']['distance'],
@@ -103,16 +110,25 @@ class ParkingSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
-
     def get_ouvert(self, obj):
-        # check_time =  datetime.utcnow().time()
-        # begin_time = obj.horaire.HeureOuverture
-        # end_time =  obj.horaire.HeureFermeture
-        ouvert_status = True
-        # if begin_time < end_time:
-        #     ouvert_status = check_time >= begin_time and check_time <= end_time
-        # else:  # crosses midnight
-        #     ouvert_status = check_time >= begin_time or check_time <= end_time
+        horaires_list = list(obj.horaires_id)
+        ouvert_status = False
+        today = datetime.today().weekday()
+        today = (today + 2) % 7
+        for horaire_id in horaires_list:
+            horaire = Horaire.objects.get(id=horaire_id)
+            field_jour = Horaire._meta.get_field('jour')
+            field_heure_ouv = Horaire._meta.get_field('HeureOuverture')
+            field_heure_ferm = Horaire._meta.get_field('HeureFermeture')
+            day = getattr(horaire, field_jour.attname)
+            if today == day:
+                check_time =  datetime.utcnow().time()
+                begin_time = getattr(horaire, field_heure_ouv.attname)
+                end_time =  getattr(horaire, field_heure_ferm.attname)
+                if begin_time < end_time:
+                    ouvert_status = check_time >= begin_time and check_time <= end_time
+                else:  # crosses midnight
+                    ouvert_status = check_time >= begin_time or check_time <= end_time
         return 'Ouvert' if ouvert_status else 'Fermé'
 
 
@@ -122,6 +138,7 @@ class ParkingSerializer(serializers.ModelSerializer):
         tarifs_data = validated_data.pop('tarifs')
         equipements_data = validated_data.pop('equipements')
         termes_data = validated_data.pop('termes')
+        paiments_data = validated_data.pop('paiments')
         print(etages_data)
 
         etages_list = []
@@ -129,10 +146,12 @@ class ParkingSerializer(serializers.ModelSerializer):
         horaires_list = []
         termes_list = []
         equipements_list = []
+        paiments_list = []
 
         print(etages_data)
         for h in horaires_data:
-            horaireModel = Horaire(Jours=h['Jours'], HeureFermeture=h['HeureFermeture'], HeureOuverture=h['HeureOuverture'])
+            horaireModel = Horaire(jour=h['jour'], HeureFermeture=h['HeureFermeture'],
+                                   HeureOuverture=h['HeureOuverture'])
             horaireModel.save()
             horaires_list.append(horaireModel.idHoraire)
         for e in etages_data:
@@ -140,13 +159,27 @@ class ParkingSerializer(serializers.ModelSerializer):
             etageModel.save()
             etages_list.append(etageModel.idEtage)
         for t in tarifs_data:
-            tarifModel = Tarif( duree=t['duree'], prix=t['prix'])
+            tarifModel = Tarif(duree=t['duree'], prix=t['prix'])
             tarifModel.save()
             tarifs_list.append(tarifModel.idTarif)
         for q in equipements_data:
-            equipModel = Equipement( designation=q['designation'])
+            equipModel = Equipement(designation=q['designation'])
+            try:
+                idEquip = q['idEquipement']
+                equipModel.id = idEquip
+            except Exception:
+                pass
             equipModel.save()
             equipements_list.append(equipModel.idEquipement)
+        for p in paiments_data:
+            paimentModel = Paiment(type=p['type'])
+            try:
+                idPaiment = p['idPaiment']
+                paimentModel.id = idPaiment
+            except Exception:
+                pass
+            paimentModel.save()
+            paiments_list.append(paimentModel.idPaiment)
         for term in termes_data:
             termModel = Terme(contenu=term['contenu'])
             termModel.save()
@@ -157,6 +190,7 @@ class ParkingSerializer(serializers.ModelSerializer):
         parking.tarifs_id = tarifs_list
         parking.termes_id = termes_list
         parking.equipements_id = equipements_list
+        parking.paiments_id = paiments_list
         parking.save()
 
         return parking
@@ -243,10 +277,9 @@ class AgentSerializer(serializers.HyperlinkedModelSerializer):
 
         return instance
 
-class AdminSerializer(serializers.ModelSerializer):
 
+class AdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'username', 'password', 'first_name', 'last_name']
         extra_kwargs = {'password': {'write_only': True}}
-
