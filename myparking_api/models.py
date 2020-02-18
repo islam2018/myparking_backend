@@ -17,6 +17,7 @@ class Tarif(models.Model):
 class Equipement(models.Model):
     idEquipement =  models.AutoField(primary_key=True)
     designation = models.TextField()
+    iconUrl = models.TextField()
 
     @property
     def idEquipement(self):
@@ -66,6 +67,7 @@ class EtageForm(forms.ModelForm):
 class Paiment(models.Model):
     idPaiment = models.AutoField(primary_key=True)
     type = models.TextField()
+    iconUrl = models.URLField()
 
     @property
     def idPaiment(self):
@@ -100,21 +102,31 @@ class Parking(models.Model):
 
 
 class Automobiliste(models.Model):
-    idAutomobiliste = models.IntegerField()
+    idAutomobiliste = models.AutoField(primary_key=True)
+    compte = models.TextField(default='app')
+    idCompte = models.TextField(default='null')
     nom = models.TextField(default='')
     prenom = models.TextField(default='')
     auth = models.OneToOneField(to=User, on_delete=models.CASCADE, default=None, related_name='driverProfile')
     favoris = models.ArrayReferenceField(to=Parking, on_delete=models.DO_NOTHING, blank=True)
     objects = DjongoManager()
 
+    @property
+    def idAutomobiliste(self):
+        return self.id
+
 
 class Agent(models.Model):
-    idAgent = models.IntegerField()
+    idAgent = models.AutoField(primary_key=True)
     nom = models.TextField(default='')
     prenom = models.TextField(default='')
     auth = models.OneToOneField(to=User, on_delete=models.CASCADE, default=None, related_name='agentProfile')
     parking = models.TextField()
     objects = DjongoManager()
+
+    @property
+    def idAgent(self):
+        return self.id
 
 
 class Reservation(models.Model):

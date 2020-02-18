@@ -54,7 +54,7 @@ class EquipementSerializer(serializers.ModelSerializer):
     idEquipement = serializers.IntegerField(required=False)
     class Meta:
         model = Equipement
-        fields = ['idEquipement', 'designation']
+        fields = ['idEquipement', 'designation', 'iconUrl']
         # extra_kwargs = {
         #     'idEquipement': {'read_only': True}
         # }
@@ -63,28 +63,30 @@ class PaimentSerializer(serializers.ModelSerializer):
     idPaiment = serializers.IntegerField(required=False)
     class Meta:
         model = Paiment
-        fields = ['idPaiment', 'type']
+        fields = ['idPaiment', 'type', 'iconUrl']
 
 
 class ParkingSerializer(serializers.ModelSerializer):
-    horaires = HoraireSerializer(many=True)
+    horaires = HoraireSerializer(many=True,write_only=True)
     etages = EtageSerializer(many=True)
     tarifs = TarifSerializer(many=True)
     equipements = EquipementSerializer(many=True)
     termes = TermeSerializer(many=True)
     paiments = PaimentSerializer(many=True)
     ouvert = serializers.SerializerMethodField()
+    horairesStatus = serializers.SerializerMethodField()
     routeInfo = serializers.SerializerMethodField()
 
     class Meta:
         model = Parking
         fields = [
             'idParking', 'nbEtages', 'nbPlaces', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaires',
-            'etages', 'tarifs', 'termes', 'paiments', 'equipements', 'ouvert', 'routeInfo']
+            'etages', 'tarifs', 'termes', 'paiments', 'equipements','horairesStatus', 'ouvert' , 'routeInfo']
         extra_kwargs = {
             'idParking': {'read_only': True},
             'ouvert': {'read_only': True},
-            'routeInfo': {'read_only': True}
+            'routeInfo': {'read_only': True},
+            'horairesStatus': {'read_only': True},
         }
 
     def get_routeInfo(self, obj):
@@ -109,6 +111,57 @@ class ParkingSerializer(serializers.ModelSerializer):
             }
         except Exception:
             return None
+
+    def get_horairesStatus(self,obj):
+        horaires_id_list = list(obj.horaires_id)
+        horaires_list = []
+        field_jour = Horaire._meta.get_field('jour')
+        field_heure_ouv = Horaire._meta.get_field('HeureOuverture')
+        field_heure_ferm = Horaire._meta.get_field('HeureFermeture')
+        days= ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+        res = []
+        for horaire_id in horaires_id_list:
+            horaire = Horaire.objects.get(id=horaire_id)
+            horaires_list.append(horaire)
+        horaires_list = sorted(horaires_list, key=lambda x: getattr(x, field_jour.attname))
+        i=0
+        while (i < len(horaires_list)):
+            horaire = horaires_list[i]
+
+            dayIndex = getattr(horaire, field_jour.attname)
+            heure_ouv = getattr(horaire, field_heure_ouv.attname)
+            heure_ferm = getattr(horaire, field_heure_ferm.attname)
+            start_day = days[dayIndex-1]
+            temp = []
+            temp.append(start_day)
+            stop = False
+            j = i +1
+            print(i,j,'*****************')
+
+            while (j < len(horaires_list) and stop == False):
+
+                horaire2 = horaires_list[j]
+                day2Index = getattr(horaire2, field_jour.attname)
+                heure_ouv2 = getattr(horaire2, field_heure_ouv.attname)
+                heure_ferm2 = getattr(horaire2, field_heure_ferm.attname)
+                print(day2Index,heure_ouv2 , heure_ferm2, "aaaaaaaaaa")
+                if (day2Index==dayIndex+1 and heure_ferm == heure_ferm2 and heure_ouv2 == heure_ouv):
+                        day_desig = days[day2Index-1]
+                        dayIndex = day2Index
+                        temp.append(day_desig)
+                        j=j+1
+                else:
+                    stop=True
+            res.append({
+                'days':temp,
+                'HeureOuverture': heure_ouv,
+                'HeureFermeture': heure_ferm
+            })
+            if (stop): i=j
+            else: i=j+1
+        return res
+
+
 
     def get_ouvert(self, obj):
         horaires_list = list(obj.horaires_id)
@@ -197,9 +250,12 @@ class ParkingSerializer(serializers.ModelSerializer):
 
 
 class AutomobilisteProfileSerializer(serializers.ModelSerializer):
+    compte = serializers.CharField(required=False)
+    idCompte = serializers.CharField(required=False)
     class Meta:
         model = Automobiliste
-        fields = ['idAutomobiliste', 'nom', 'prenom']
+        fields = ['idAutomobiliste', 'nom', 'prenom', 'compte', 'idCompte']
+        extra_kwargs = {'idAutomobiliste': {'read_only': True}}
 
 
 class AutomobilisteSerializer(serializers.HyperlinkedModelSerializer):
