@@ -1,17 +1,24 @@
+import math
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
+from django.http import Http404
 from django.shortcuts import render, get_object_or_404
 
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, mixins
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rolepermissions.checkers import has_role
 
-from myparking.permissions import IsAgent, IsDriver
+
 from myparking.roles import Driver, Agent
-from .models import Etage, Parking, Automobiliste
-from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer
+from .models import Etage, Parking, Automobiliste, Equipement
+from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
+    EquipementSerializer
 
 
 class EtageView(viewsets.ModelViewSet):
@@ -25,10 +32,77 @@ class ParkingView(viewsets.ModelViewSet):
     permission_classes = []
     authentication_classes = []
 
-    def getOneParking(self, request, idParking=None):
-        parking = get_object_or_404(self.queryset, id=idParking)
-        serializer = ParkingSerializer(parking, context={'request': request})
-        return Response(serializer.data)
+
+    def filterParkings(self, request):
+        try:
+            minDistance = request.query_params['minDistance']
+        except Exception:
+            minDistance = 0
+        try:
+            maxDistance = request.query_params['maxDistance']
+        except Exception:
+            maxDistance = 1000000000
+        try:
+            minPrice = request.query_params['minPrice']
+        except Exception:
+            minPrice = 0
+        try:
+            maxPrice = request.query_params['maxPrice']
+        except Exception:
+            maxPrice = 1000000000
+        try:
+            equipements_id = request.query_params['equipements'].split(',')
+        except Exception:
+            equipements_id = []
+        try:
+            parkings = ParkingSerializer(Parking.objects.all(), many=True, context={'request': request}).data
+            res = filter(lambda parking:self.applyFilter(parking,{
+                'minDistance':int(minDistance),
+                'maxDistance':int(maxDistance),
+                'minPrice':int(minPrice),
+                'maxPrice':int(maxPrice),
+                'equipements_id':equipements_id
+                }),parkings)
+        except Parking.DoesNotExist:
+            raise Http404
+
+        return Response({
+            'a':minDistance, 'b':maxDistance, 'c':minPrice, 'd':maxPrice, 'e':equipements_id,
+            'res': res
+        })
+
+    def applyFilter(self,parking, filters):
+        distance = int(parking['routeInfo']['distance'])
+        minPrice = filters['minPrice']
+        maxPrice = filters['maxPrice']
+        equipements = filters['equipements_id']
+        hasPrice = False
+        if filters['minDistance'] <= distance <= filters['maxDistance']:
+            for tarif in parking['tarifs']:
+                price=int(tarif['prix'])
+                if minPrice <= price <= maxPrice:
+                    hasPrice = True
+            if hasPrice:
+                hasAllEquip = True
+                for equip in equipements:
+                    hasEquip=False
+                    for equipPark in parking['equipements']:
+                        if int(equipPark['idEquipement'])==int(equip):
+                            hasEquip=True
+                    if (hasEquip==False):
+                        hasAllEquip=False
+                if hasAllEquip:
+                    return True
+                else:
+                    return False
+            else:
+                return False
+        else:
+            return False
+    # def getOneParking(self, request, idParking=None):
+    #     parking = get_object_or_404(self.queryset, id=idParking)
+    #     serializer = ParkingSerializer(parking, context={'request': request})
+    #     return Response(serializer.data)
 
 
     # def get_permissions(self):
@@ -41,6 +115,49 @@ class ParkingView(viewsets.ModelViewSet):
     #     elif self.action == 'list' :
     #         permission_classes = [IsDriver]
     #     return [permission() for permission in permission_classes]
+
+class FilterInfosView(mixins.ListModelMixin,GenericViewSet):
+    queryset = Equipement.objects.all()
+    serializer_class = EquipementSerializer
+    permission_classes = []
+    authentication_classes = []
+    def list(self, request, *args, **kwargs):
+        try:
+            equipements = EquipementSerializer(self.queryset, many=True).data
+        except Equipement.DoesNotExist:
+            raise Http404
+        try:
+            parkings = ParkingSerializer(Parking.objects.all(), many=True,context={'request': request}).data
+            minDistance = parkings[0]['routeInfo']['distance']
+            maxDistance = 0
+            minPrice = parkings[0]['tarifs'][0]['prix']
+            maxPrice = 0
+            for parking in parkings:
+                distance = parking['routeInfo']['distance']
+                if (distance <= minDistance):
+                    minDistance = distance
+                if (distance >= maxDistance):
+                    maxDistance = distance
+                for tarif in parking['tarifs']:
+                    price = tarif['prix']
+                    if (price <= minPrice):
+                        minPrice = price
+                    if (price >= maxPrice):
+                        maxPrice = price
+
+        except Parking.DoesNotExist:
+            raise Http404
+        return Response({
+            'equipements': equipements,
+            'prix': {
+                'min': minPrice,
+                'max': maxPrice
+            },
+            'distance': {
+                'min': minDistance,
+                'max': maxDistance
+            }
+        })
 
 
 class RegistrationAutomobilisteView(viewsets.ModelViewSet):

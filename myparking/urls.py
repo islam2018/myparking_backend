@@ -15,8 +15,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('myparking_api.urls'))
+    path('', include('myparking_api.urls')),
+    path('api/docs', RedirectView.as_view(url='https://documenter.getpostman.com/view/6685304/SzKSUfcj?version=latest'))
 ]
