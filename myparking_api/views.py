@@ -66,10 +66,7 @@ class ParkingView(viewsets.ModelViewSet):
         except Parking.DoesNotExist:
             raise Http404
 
-        return Response({
-            'a':minDistance, 'b':maxDistance, 'c':minPrice, 'd':maxPrice, 'e':equipements_id,
-            'res': res
-        })
+        return Response(res)
 
     def applyFilter(self,parking, filters):
         distance = int(parking['routeInfo']['distance'])
