@@ -1,7 +1,10 @@
+from datetime import time, datetime
+
 from django.contrib.auth.models import User
 from djongo import models
 from djongo.models import DjongoManager
 from django import forms
+from psycopg2._psycopg import Date
 
 
 class Tarif(models.Model):
@@ -129,18 +132,32 @@ class Agent(models.Model):
         return self.id
 
 
-class Reservation(models.Model):
-    idReservation = models.IntegerField()
-    date = models.DateField()
-    entreePrevue = models.DateField(default='something')
-    sortiePrevue = models.DateField()
-    entreeEffective = models.DateField()
-    sortieEffective = models.DateField()
-    parking = models.OneToOneField(Parking, on_delete=models.CASCADE, default='something')
-    automobiliste = models.OneToOneField(Automobiliste, on_delete=models.CASCADE)
-    paiement = models.OneToOneField(Paiment, on_delete=models.CASCADE)
-
+class PaiementInstance(models.Model):
+    idPaimentInstance = models.AutoField(primary_key=True)
+    montant = models.TextField()
+    date = models.DateTimeField()
     objects = DjongoManager()
+    @property
+    def idPaiementInstance(self):
+        return self.id
+
+class Reservation(models.Model):
+    idReservation = models.AutoField(primary_key=True)
+    qrContent = models.TextField()
+    dateEntreePrevue = models.DateTimeField(default=datetime.today())
+    dateSortiePrevue = models.DateTimeField(default=datetime.today())
+    dateEntreeEffective = models.DateTimeField(default=datetime.today())
+    dateSortieEffective = models.DateTimeField(default=datetime.today())
+    parking = models.ForeignKey(to=Parking,on_delete=models.CASCADE)
+    automobiliste = models.ForeignKey(to=Automobiliste,on_delete=models.CASCADE)
+    paiment = models.ForeignKey(to=Paiment, on_delete=models.CASCADE)
+    paiementInstance = models.OneToOneField(to=PaiementInstance, on_delete=models.CASCADE, default=None)
+    objects = DjongoManager()
+
+    @property
+    def idReservation(self):
+        return self.id
+
 
 
 class Evaluation(models.Model):

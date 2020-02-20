@@ -1,15 +1,18 @@
 import json
 from datetime import datetime, time
+import hashlib
 
 from django.contrib.auth.models import User, Permission, Group
 from django.db.models import TextField
 from django.utils.timezone import now
 from rest_framework import serializers
+from rest_framework.generics import get_object_or_404
 from rolepermissions.roles import assign_role
 
 from myparking import roles
 from myparking.roles import Driver
-from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent, Terme, Paiment
+from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent, Terme, Paiment, Reservation, \
+    PaiementInstance
 from django.contrib.auth.hashers import make_password
 import requests
 
@@ -64,6 +67,13 @@ class PaimentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Paiment
         fields = ['idPaiment', 'type', 'iconUrl']
+
+class PaimentInstanceSerializer(serializers.ModelSerializer):
+    idPaimentInstance = serializers.IntegerField(required=False)
+    class Meta:
+        model = PaiementInstance
+        fields = ['idPaimentInstance', 'montant', 'date']
+
 
 
 class ParkingSerializer(serializers.ModelSerializer):
@@ -339,3 +349,52 @@ class AdminSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'username', 'password', 'first_name', 'last_name']
         extra_kwargs = {'password': {'write_only': True}}
+
+
+class ReservationSerializer(serializers.ModelSerializer):
+    parking = ParkingSerializer(read_only=True)
+    automobiliste = AutomobilisteProfileSerializer(read_only=True)
+    paiment = PaimentSerializer(read_only=True)
+    paiment_id = serializers.IntegerField(write_only=True)
+    parking_id = serializers.IntegerField(write_only=True)
+    automobiliste_id = serializers.IntegerField(write_only=True)
+    paiementInstance = PaimentInstanceSerializer()
+
+    class Meta:
+        model = Reservation
+        fields = ['idReservation', 'qrContent', 'dateEntreePrevue',
+                  'dateSortiePrevue', 'dateEntreeEffective', 'dateSortieEffective',
+                  'parking', 'automobiliste', 'paiment', 'paiementInstance', 'paiment_id',
+                  'parking_id', 'automobiliste_id']
+        extra_kwargs = {'qrContent': {'read_only': True},
+                        'dateEntreePrevue': {'required': False},
+                        'dateSortiePrevue': {'required': False}}
+
+    def create(self, validated_data):
+
+        paiment_data = validated_data.pop('paiementInstance')
+        paiment = PaiementInstance(montant=paiment_data['montant'],date=paiment_data['date'])
+        paiment.save()
+        dateEntree = validated_data.pop('dateEntreePrevue')
+        dateSortie = validated_data.pop('dateSortiePrevue')
+        data_to_hash = {
+            "dateEntree": str(dateEntree),
+            "dateSortie":str(dateSortie),
+            "idPaiement": paiment.idPaimentInstance
+        }
+        print(dateEntree)
+        qr = hashlib.md5(json.dumps(data_to_hash).encode("utf-8")).hexdigest()
+        reservation = Reservation(paiementInstance=paiment,
+                                  qrContent=qr,
+                                  dateEntreeEffective=dateEntree,
+                                  dateSortieEffective=dateSortie,
+                                  **validated_data)
+        reservation.save()
+        return reservation
+
+    def update(self, instance, validated_data):
+        reservation = instance
+        reservation.dateEntreeEffective = validated_data.get('dateEntreeEffective')
+        reservation.dateSortieEffective = validated_data.get('dateSortieEffective')
+        instance.save()
+        return instance

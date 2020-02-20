@@ -2,6 +2,7 @@ import math
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404
 
@@ -16,9 +17,9 @@ from rolepermissions.checkers import has_role
 
 
 from myparking.roles import Driver, Agent
-from .models import Etage, Parking, Automobiliste, Equipement
+from .models import Etage, Parking, Automobiliste, Equipement, Reservation
 from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
-    EquipementSerializer
+    EquipementSerializer, ReservationSerializer
 
 
 class EtageView(viewsets.ModelViewSet):
@@ -155,6 +156,41 @@ class FilterInfosView(mixins.ListModelMixin,GenericViewSet):
                 'max': maxDistance
             }
         })
+
+class ReservationView(viewsets.ModelViewSet):
+    queryset = Reservation.objects.all()
+    permission_classes = []
+    authentication_classes = []
+    serializer_class = ReservationSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                return super().create(request, *args, **kwargs)
+        except Exception:
+            return Response({
+                "detail": "Creating Reservation Transaction Error"
+            }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                return super().update(request, *args, **kwargs)
+        except Exception:
+            return Response({
+                "detail": "Creating Reservation Transaction Error"
+            }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def list(self, request, *args, **kwargs):
+        try:
+            automobiliste_id = request.query_params['automobiliste_id']
+            query = Reservation.objects.filter(automobiliste_id=automobiliste_id)
+            data = ReservationSerializer(query,many=True,context={'request': request}).data
+            return Response(data)
+        except Exception:
+            print("catched exception")
+            return super().list(request, *args, **kwargs)
+
 
 
 class RegistrationAutomobilisteView(viewsets.ModelViewSet):

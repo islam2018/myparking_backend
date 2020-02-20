@@ -11,7 +11,8 @@ router = routers.DefaultRouter()
 router.register('parking', views.ParkingView)
 router.register('register/driver', views.RegistrationAutomobilisteView)
 router.register('register/agent', views.RegistrationAgentView)
-router.register('filterInfos', views.FilterInfosView)
+router.register('filterInfos', views.FilterInfosView),
+router.register('reservation', views.ReservationView)
 
 urlpatterns = [
     path('', include(router.urls)),
