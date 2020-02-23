@@ -1,5 +1,7 @@
+import json
 import math
 
+import requests
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -15,7 +17,7 @@ from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rolepermissions.checkers import has_role
 
-
+from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver, Agent
 from .models import Etage, Parking, Automobiliste, Equipement, Reservation
 from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
@@ -259,3 +261,33 @@ class AdminLoginViewJWT(TokenObtainPairView):
                 serialized_user = self.user_serializer_class(user)
                 response.data.update(serialized_user.data)
         return response
+
+class SearchView(APIView):
+    #permission_classes = [IsDriver]
+    def get(self, request):
+        query = None
+        try:
+            query =  request.query_params['query']
+        except Exception:
+            return Response({
+                "detail": "Bad request parameters"
+            }, status.HTTP_400_BAD_REQUEST)
+        try:
+            if query:
+                url = "https://places.sit.ls.hereapi.com/places/v1/autosuggest"
+                headers = {'Accept': 'application/json'}
+                params = {
+                    'apiKey': HERE_API_KEY,
+                    'in': '36.0998,3.2953;r=300000',
+                    'q': query
+                }
+                response = requests.get(url,params,headers=headers)
+                return Response(json.loads(response.text))
+            else:
+                return Response({
+                    "detail": "Request error"
+                }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception:
+            return Response({
+                "detail": "Request error"
+            }, status.HTTP_500_INTERNAL_SERVER_ERROR)
