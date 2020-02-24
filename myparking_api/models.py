@@ -143,7 +143,12 @@ class PaiementInstance(models.Model):
 
 class Reservation(models.Model):
     idReservation = models.AutoField(primary_key=True)
-    qrContent = models.TextField()
+    codeReservation = models.TextField(default="")
+    hashId = models.TextField()
+    qrUrl = models.TextField()
+    state = models.TextField(default='En cours')
+    etageAttribue = models.IntegerField(default=1)
+    placeAttribue= models.IntegerField(default=1)
     dateEntreePrevue = models.DateTimeField(default=datetime.today())
     dateSortiePrevue = models.DateTimeField(default=datetime.today())
     dateEntreeEffective = models.DateTimeField(default=datetime.today())

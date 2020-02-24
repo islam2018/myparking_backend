@@ -1,6 +1,10 @@
+import io
 import json
-import math
 
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+import qrcode
 import requests
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
@@ -166,13 +170,14 @@ class ReservationView(viewsets.ModelViewSet):
     serializer_class = ReservationSerializer
 
     def create(self, request, *args, **kwargs):
-        try:
-            with transaction.atomic():
-                return super().create(request, *args, **kwargs)
-        except Exception:
-            return Response({
-                "detail": "Creating Reservation Transaction Error"
-            }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # try:
+        #     with transaction.atomic():
+        #         return super().create(request, *args, **kwargs)
+        # except Exception:
+        #     return Response({
+        #         "detail": "Creating Reservation Transaction Error"
+        #     }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
         try:
@@ -291,3 +296,22 @@ class SearchView(APIView):
             return Response({
                 "detail": "Request error"
             }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class TestView(APIView):
+    def get(self,request):
+        content=request.query_params['content']
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(content)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill_color="black", back_color="white")
+        b = io.BytesIO()
+        img.save(b, "JPEG")
+        b.seek(0)
+        res = cloudinary.uploader.upload(b, folder='reservation')
+        return Response(res)

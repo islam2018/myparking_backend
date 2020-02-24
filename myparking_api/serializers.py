@@ -1,7 +1,13 @@
+import io
 import json
 from datetime import datetime, time
 import hashlib
+import random
 
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+import qrcode
 from django.contrib.auth.models import User, Permission, Group
 from django.db.models import TextField
 from django.utils.timezone import now
@@ -86,18 +92,23 @@ class ParkingSerializer(serializers.ModelSerializer):
     ouvert = serializers.SerializerMethodField()
     horairesStatus = serializers.SerializerMethodField()
     routeInfo = serializers.SerializerMethodField()
+    nbPlacesDisponibles = serializers.SerializerMethodField()
 
     class Meta:
         model = Parking
         fields = [
-            'idParking', 'nbEtages', 'nbPlaces', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaires',
+            'idParking', 'nbEtages', 'nbPlaces', 'nbPlacesDisponibles', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaires',
             'etages', 'tarifs', 'termes', 'paiments', 'equipements','horairesStatus', 'ouvert' , 'routeInfo']
         extra_kwargs = {
             'idParking': {'read_only': True},
             'ouvert': {'read_only': True},
             'routeInfo': {'read_only': True},
+            'nbPlacesDisponibles': {'read_only': True},
             'horairesStatus': {'read_only': True},
         }
+    def get_nbPlacesDisponibles(self,object):
+        return random.randrange(object.nbPlaces)
+        pass
 
     def get_routeInfo(self, obj):
         request = self.context['request']
@@ -105,7 +116,6 @@ class ParkingSerializer(serializers.ModelSerializer):
 
             start = request.query_params['start']
             destination = str(obj.lattitude) + "," + str(obj.longitude)
-            print(start, "-->", destination)
             response = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json", params={
                 'apiKey': 'SnEjiUueUMbL4zeFjvfi6vx4JMWGkdCrof7QDZLQWoY',
                 'start0': start,
@@ -114,7 +124,6 @@ class ParkingSerializer(serializers.ModelSerializer):
                 'summaryAttributes': 'traveltime,distance'
             })
             json_data = json.loads(response.text)
-            print(json_data)
             return {
                 'distance': json_data['response']['matrixEntry'][0]['summary']['distance'],
                 'travelTime': json_data['response']['matrixEntry'][0]['summary']['travelTime']
@@ -146,7 +155,7 @@ class ParkingSerializer(serializers.ModelSerializer):
             temp.append(start_day)
             stop = False
             j = i +1
-            print(i,j,'*****************')
+
 
             while (j < len(horaires_list) and stop == False):
 
@@ -154,7 +163,7 @@ class ParkingSerializer(serializers.ModelSerializer):
                 day2Index = getattr(horaire2, field_jour.attname)
                 heure_ouv2 = getattr(horaire2, field_heure_ouv.attname)
                 heure_ferm2 = getattr(horaire2, field_heure_ferm.attname)
-                print(day2Index,heure_ouv2 , heure_ferm2, "aaaaaaaaaa")
+
                 if (day2Index==dayIndex+1 and heure_ferm == heure_ferm2 and heure_ouv2 == heure_ouv):
                         day_desig = days[day2Index-1]
                         dayIndex = day2Index
@@ -202,7 +211,6 @@ class ParkingSerializer(serializers.ModelSerializer):
         equipements_data = validated_data.pop('equipements')
         termes_data = validated_data.pop('termes')
         paiments_data = validated_data.pop('paiments')
-        print(etages_data)
 
         etages_list = []
         tarifs_list = []
@@ -211,7 +219,6 @@ class ParkingSerializer(serializers.ModelSerializer):
         equipements_list = []
         paiments_list = []
 
-        print(etages_data)
         for h in horaires_data:
             horaireModel = Horaire(jour=h['jour'], HeureFermeture=h['HeureFermeture'],
                                    HeureOuverture=h['HeureOuverture'])
@@ -358,15 +365,20 @@ class ReservationSerializer(serializers.ModelSerializer):
     paiment_id = serializers.IntegerField(write_only=True)
     parking_id = serializers.IntegerField(write_only=True)
     automobiliste_id = serializers.IntegerField(write_only=True)
+    state = serializers.CharField(required=False)
+    etageAttribue = serializers.IntegerField(required=False)
+    placeAttribue = serializers.IntegerField(required=False)
     paiementInstance = PaimentInstanceSerializer()
 
     class Meta:
         model = Reservation
-        fields = ['idReservation', 'qrContent', 'dateEntreePrevue',
-                  'dateSortiePrevue', 'dateEntreeEffective', 'dateSortieEffective',
+        fields = ['idReservation', 'hashId', 'codeReservation', 'qrUrl', 'state', 'etageAttribue', 'placeAttribue',
+                  'dateEntreePrevue', 'dateSortiePrevue', 'dateEntreeEffective', 'dateSortieEffective',
                   'parking', 'automobiliste', 'paiment', 'paiementInstance', 'paiment_id',
                   'parking_id', 'automobiliste_id']
-        extra_kwargs = {'qrContent': {'read_only': True},
+        extra_kwargs = {'hashId': {'read_only': True},
+                        'qrUrl': {'read_only': True},
+                        'codeReservation': {'read_only': True},
                         'dateEntreePrevue': {'required': False},
                         'dateSortiePrevue': {'required': False}}
 
@@ -377,15 +389,25 @@ class ReservationSerializer(serializers.ModelSerializer):
         paiment.save()
         dateEntree = validated_data.pop('dateEntreePrevue')
         dateSortie = validated_data.pop('dateSortiePrevue')
+        x = (f"{random.randrange(99):02d}")
+        y = (f"{1:02d}")
+        z = y
+        code = "DZ" + x + "-" + y + "-" + z
         data_to_hash = {
+            "codeReservation": str(code),
             "dateEntree": str(dateEntree),
             "dateSortie":str(dateSortie),
             "idPaiement": paiment.idPaimentInstance
         }
-        print(dateEntree)
-        qr = hashlib.md5(json.dumps(data_to_hash).encode("utf-8")).hexdigest()
+
+        hashed = hashlib.md5(json.dumps(data_to_hash).encode("utf-8")).hexdigest()
+        qrUrl = self.generateQR(hashed)
         reservation = Reservation(paiementInstance=paiment,
-                                  qrContent=qr,
+                                  hashId=hashed,
+                                  qrUrl = qrUrl,
+                                  codeReservation=code,
+                                  dateEntreePrevue=dateEntree,
+                                  dateSortiePrevue=dateSortie,
                                   dateEntreeEffective=dateEntree,
                                   dateSortieEffective=dateSortie,
                                   **validated_data)
@@ -398,3 +420,19 @@ class ReservationSerializer(serializers.ModelSerializer):
         reservation.dateSortieEffective = validated_data.get('dateSortieEffective')
         instance.save()
         return instance
+
+    def generateQR(self,content):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(content)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        b = io.BytesIO()
+        img.save(b, "JPEG")
+        b.seek(0)
+        res = cloudinary.uploader.upload(b, folder='reservation')
+        return res['url']

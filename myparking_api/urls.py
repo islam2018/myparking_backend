@@ -20,6 +20,7 @@ urlpatterns = [
     # path('parking/<idParking>', views.ParkingView.as_view({'get': 'getOneParking'}), name='OneParking'),
     path('filterParkings', views.ParkingView.as_view({'get': 'filterParkings'}), name='FilterParking'),
     path('search', views.SearchView.as_view()),
+    path('test', views.TestView.as_view()),
     path('api/driver/login', DriverLoginViewJWT.as_view()),
     path('api/agent/login', AgentLoginViewJWT.as_view()),
     path('api/admin/login', AdminLoginViewJWT.as_view()),
