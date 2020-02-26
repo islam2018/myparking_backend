@@ -16,6 +16,7 @@ from rest_framework.generics import get_object_or_404
 from rolepermissions.roles import assign_role
 
 from myparking import roles
+from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
 from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent, Terme, Paiment, Reservation, \
     PaiementInstance
@@ -113,23 +114,60 @@ class ParkingSerializer(serializers.ModelSerializer):
     def get_routeInfo(self, obj):
         request = self.context['request']
         try:
-
             start = request.query_params['start']
-            destination = str(obj.lattitude) + "," + str(obj.longitude)
-            response = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json", params={
-                'apiKey': 'SnEjiUueUMbL4zeFjvfi6vx4JMWGkdCrof7QDZLQWoY',
-                'start0': start,
-                'destination0': destination,
-                'mode': 'balanced;car;traffic:enabled',
-                'summaryAttributes': 'traveltime,distance'
-            })
-            json_data = json.loads(response.text)
-            return {
-                'distance': json_data['response']['matrixEntry'][0]['summary']['distance'],
-                'travelTime': json_data['response']['matrixEntry'][0]['summary']['travelTime']
-            }
+        except Exception:
+            start = None
+        try:
+            destination = request.query_params['destination']
+        except Exception:
+            destination = None
+        try:
+            if (start):
+                travelA = start
+                travelB = str(obj.lattitude) + "," + str(obj.longitude)
+                if (destination):
+                    walkA = str(obj.lattitude) + "," + str(obj.longitude)
+                    walkB = destination
+                else:
+                    walkA = travelA
+                    walkB = travelB
+                travelResponse = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
+                                              params={
+                                                  'apiKey': HERE_API_KEY,
+                                                  'start0': travelA,
+                                                  'destination0': travelB,
+                                                  'mode': 'balanced;car;traffic:enabled',
+                                                  'summaryAttributes': 'traveltime,distance'
+                                              })
+                json_travel_data = json.loads(travelResponse.text)
+                travelDistance = json_travel_data['response']['matrixEntry'][0]['summary']['distance']
+                travelTime = json_travel_data['response']['matrixEntry'][0]['summary']['travelTime']
+                walkingResponse = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
+                                               params={
+                                                   'apiKey': HERE_API_KEY,
+                                                   'start0': walkA,
+                                                   'destination0': walkB,
+                                                   'mode': 'balanced;pedestrian',
+                                                   'summaryAttributes': 'traveltime,distance'
+                                               })
+                json_walking_data = json.loads(walkingResponse.text)
+                walkingDistance = json_walking_data['response']['matrixEntry'][0]['summary']['distance']
+                walkingTime = json_walking_data['response']['matrixEntry'][0]['summary']['travelTime']
+                canWalk = False
+                if (walkingDistance <= 2000): canWalk = True
+                return {
+                    'travelDistance': travelDistance,
+                    'travelTime': travelTime,
+                    'walkingDistance': walkingDistance,
+                    'walkingTime': walkingTime,
+                    'canWalk': canWalk
+                }
+            else:
+                return None
         except Exception:
             return None
+
+
 
     def get_horairesStatus(self,obj):
         horaires_id_list = list(obj.horaires_id)
