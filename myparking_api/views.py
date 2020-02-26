@@ -40,7 +40,7 @@ class ParkingView(viewsets.ModelViewSet):
     authentication_classes = []
 
 
-    def filterParkings(self, request):
+    def list(self, request, *args, **kwargs):
         try:
             minDistance = request.query_params['minDistance']
         except Exception:
@@ -61,22 +61,26 @@ class ParkingView(viewsets.ModelViewSet):
             equipements_id = request.query_params['equipements'].split(',')
         except Exception:
             equipements_id = []
-        try:
-            parkings = ParkingSerializer(Parking.objects.all(), many=True, context={'request': request}).data
-            res = filter(lambda parking:self.applyFilter(parking,{
-                'minDistance':int(minDistance),
-                'maxDistance':int(maxDistance),
-                'minPrice':int(minPrice),
-                'maxPrice':int(maxPrice),
-                'equipements_id':equipements_id
-                }),parkings)
-        except Parking.DoesNotExist:
-            raise Http404
+        if(minDistance != 0 or maxDistance!=1000000000 and minPrice!=0 or maxPrice!=0 or equipements_id!=[]):
+            try:
+                parkings = ParkingSerializer(Parking.objects.all(), many=True, context={'request': request}).data
+                res = filter(lambda parking: self.applyFilter(parking, {
+                    'minDistance': int(minDistance),
+                    'maxDistance': int(maxDistance),
+                    'minPrice': int(minPrice),
+                    'maxPrice': int(maxPrice),
+                    'equipements_id': equipements_id
+                }), parkings)
+            except Parking.DoesNotExist:
+                raise Http404
+            return Response(res)
+        else:
+            return super().list(request,*args, **kwargs)
 
-        return Response(res)
+
 
     def applyFilter(self,parking, filters):
-        distance = int(parking['routeInfo']['distance'])
+        distance = int(parking['routeInfo']['walkingDistance'])
         minPrice = filters['minPrice']
         maxPrice = filters['maxPrice']
         equipements = filters['equipements_id']
@@ -132,12 +136,12 @@ class FilterInfosView(mixins.ListModelMixin,GenericViewSet):
             raise Http404
         try:
             parkings = ParkingSerializer(Parking.objects.all(), many=True,context={'request': request}).data
-            minDistance = parkings[0]['routeInfo']['distance']
+            minDistance = parkings[0]['routeInfo']['walkingDistance']
             maxDistance = 0
             minPrice = parkings[0]['tarifs'][0]['prix']
             maxPrice = 0
             for parking in parkings:
-                distance = parking['routeInfo']['distance']
+                distance = parking['routeInfo']['walkingDistance']
                 if (distance <= minDistance):
                     minDistance = distance
                 if (distance >= maxDistance):
@@ -296,22 +300,3 @@ class SearchView(APIView):
             return Response({
                 "detail": "Request error"
             }, status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-class TestView(APIView):
-    def get(self,request):
-        content=request.query_params['content']
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(content)
-        qr.make(fit=True)
-
-        img = qr.make_image(fill_color="black", back_color="white")
-        b = io.BytesIO()
-        img.save(b, "JPEG")
-        b.seek(0)
-        res = cloudinary.uploader.upload(b, folder='reservation')
-        return Response(res)
