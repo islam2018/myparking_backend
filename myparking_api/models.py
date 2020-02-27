@@ -109,6 +109,7 @@ class Automobiliste(models.Model):
     compte = models.TextField(default='app')
     idCompte = models.TextField(default='null')
     nom = models.TextField(default='')
+    numTel = models.TextField(default='')
     prenom = models.TextField(default='')
     auth = models.OneToOneField(to=User, on_delete=models.CASCADE, default=None, related_name='driverProfile')
     favoris = models.ArrayReferenceField(to=Parking, on_delete=models.DO_NOTHING, blank=True)

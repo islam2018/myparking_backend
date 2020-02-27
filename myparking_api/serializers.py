@@ -309,7 +309,7 @@ class AutomobilisteProfileSerializer(serializers.ModelSerializer):
     idCompte = serializers.CharField(required=False)
     class Meta:
         model = Automobiliste
-        fields = ['idAutomobiliste', 'nom', 'prenom', 'compte', 'idCompte']
+        fields = ['idAutomobiliste', 'nom', 'prenom', 'numTel', 'compte', 'idCompte']
         extra_kwargs = {'idAutomobiliste': {'read_only': True}}
 
 
@@ -342,6 +342,7 @@ class AutomobilisteSerializer(serializers.HyperlinkedModelSerializer):
         profile.idAutomobiliste = profile_data.get('idAutomobiliste', profile.idAutomobiliste)
         profile.nom = profile_data.get('nom', profile.nom)
         profile.prenom = profile_data.get('prenom', profile.prenom)
+        profile.numTel = profile_data.get('numTel', profile.numTel)
 
         profile.save()
 
