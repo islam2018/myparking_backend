@@ -10,6 +10,7 @@ import cloudinary.api
 import qrcode
 from django.contrib.auth.models import User, Permission, Group
 from django.db.models import TextField
+from django.http import Http404
 from django.utils.timezone import now
 from rest_framework import serializers
 from rest_framework.generics import get_object_or_404
@@ -112,8 +113,9 @@ class ParkingSerializer(serializers.ModelSerializer):
         pass
 
     def get_routeInfo(self, obj):
-        request = self.context['request']
+
         try:
+            request = self.context['request']
             start = request.query_params['start']
         except Exception:
             start = None
@@ -348,6 +350,27 @@ class AutomobilisteSerializer(serializers.HyperlinkedModelSerializer):
 
         return instance
 
+class FavorisSerializer(serializers.ModelSerializer):
+    favoris = ParkingSerializer(many=True, read_only=True)
+    favoris_id = serializers.ListField(write_only=True)
+    class Meta:
+        model = Automobiliste
+        fields = ['idAutomobiliste', 'favoris', 'favoris_id']
+
+    def create(self, validated_data):
+        request = self.context['request']
+        favoris_id = validated_data.pop('favoris_id')
+        print(favoris_id)
+        idAutomobiliste = request.query_params['automobiliste']
+        driver = Automobiliste.objects.get(id=idAutomobiliste)
+        for fav_id in favoris_id:
+            driver.favoris_id.add(fav_id)
+        driver.save()
+        return driver
+
+
+
+
 
 class AgentProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -471,7 +494,9 @@ class ReservationSerializer(serializers.ModelSerializer):
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
         b = io.BytesIO()
+
         img.save(b, "JPEG")
         b.seek(0)
         res = cloudinary.uploader.upload(b, folder='reservation')
         return res['url']
+

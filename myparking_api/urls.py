@@ -9,6 +9,7 @@ from .views import DriverLoginViewJWT, AgentLoginViewJWT, AdminLoginViewJWT
 
 router = routers.DefaultRouter()
 router.register('parking', views.ParkingView)
+router.register('favoris', views.FavorisView)
 router.register('register/driver', views.RegistrationAutomobilisteView)
 router.register('register/agent', views.RegistrationAgentView)
 router.register('filterInfos', views.FilterInfosView),

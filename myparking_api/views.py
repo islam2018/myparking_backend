@@ -25,7 +25,7 @@ from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver, Agent
 from .models import Etage, Parking, Automobiliste, Equipement, Reservation
 from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
-    EquipementSerializer, ReservationSerializer
+    EquipementSerializer, ReservationSerializer, FavorisSerializer
 
 
 class EtageView(viewsets.ModelViewSet):
@@ -216,6 +216,27 @@ class RegistrationAgentView(viewsets.ModelViewSet):
     permission_classes = []
     authentication_classes = []
     serializer_class = AgentSerializer
+
+class FavorisView(viewsets.ModelViewSet):
+    queryset = Automobiliste.objects.all()
+    permission_classes = []
+    authentication_classes = []
+    serializer_class = FavorisSerializer
+
+    def list(self, request, *args, **kwargs):
+        try:
+            idAutomobiliste = request.query_params['automobiliste']
+            query = Automobiliste.objects.get(id=idAutomobiliste)
+            data = FavorisSerializer(query).data
+            return Response(data)
+        except Http404:
+            return Response({
+                'detail': 'Automobiliste non existant'
+            }, status.HTTP_404_NOT_FOUND)
+        except Exception:
+            return Response({
+                'detail': 'Internal server error'
+            }, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class DriverLoginViewJWT(TokenObtainPairView):
