@@ -23,14 +23,22 @@ from rolepermissions.checkers import has_role
 
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver, Agent
-from .models import Etage, Parking, Automobiliste, Equipement, Reservation
+from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment
 from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
-    EquipementSerializer, ReservationSerializer, FavorisSerializer
+    EquipementSerializer, ReservationSerializer, FavorisSerializer, PaimentSerializer
 
 
-class EtageView(viewsets.ModelViewSet):
-    queryset = Etage.objects.all()
-    serializer_class = EtageSerializer
+class EquipementView(viewsets.ModelViewSet):
+    queryset = Equipement.objects.all()
+    serializer_class = EquipementSerializer
+    permission_classes = []
+    authentication_classes = []
+
+class PaiementView(viewsets.ModelViewSet):
+    queryset = Paiment.objects.all()
+    serializer_class = PaimentSerializer
+    permission_classes = []
+    authentication_classes = []
 
 
 class ParkingView(viewsets.ModelViewSet):
