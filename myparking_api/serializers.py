@@ -88,9 +88,11 @@ class ParkingSerializer(serializers.ModelSerializer):
     horaires = HoraireSerializer(many=True,write_only=True)
     etages = EtageSerializer(many=True)
     tarifs = TarifSerializer(many=True)
-    equipements = EquipementSerializer(many=True)
+    equipements = EquipementSerializer(many=True , read_only=True)
+    equipements_id = serializers.ListField(write_only=True)
+    paiments = PaimentSerializer(many=True, read_only=True)
+    paiments_id = serializers.ListField(write_only=True)
     termes = TermeSerializer(many=True)
-    paiments = PaimentSerializer(many=True)
     ouvert = serializers.SerializerMethodField()
     horairesStatus = serializers.SerializerMethodField()
     routeInfo = serializers.SerializerMethodField()
@@ -100,7 +102,7 @@ class ParkingSerializer(serializers.ModelSerializer):
         model = Parking
         fields = [
             'idParking', 'nbEtages', 'nbPlaces', 'nbPlacesDisponibles', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaires',
-            'etages', 'tarifs', 'termes', 'paiments', 'equipements','horairesStatus', 'ouvert' , 'routeInfo']
+            'etages', 'tarifs', 'termes', 'paiments', 'paiments_id', 'equipements', 'equipements_id', 'horairesStatus', 'ouvert' , 'routeInfo']
         extra_kwargs = {
             'idParking': {'read_only': True},
             'ouvert': {'read_only': True},
@@ -113,58 +115,60 @@ class ParkingSerializer(serializers.ModelSerializer):
         pass
 
     def get_routeInfo(self, obj):
-
         try:
             request = self.context['request']
-            start = request.query_params['start']
-        except Exception:
-            start = None
-        try:
-            destination = request.query_params['destination']
-        except Exception:
-            destination = None
-        try:
-            if (start):
-                travelA = start
-                travelB = str(obj.lattitude) + "," + str(obj.longitude)
-                if (destination):
-                    walkA = str(obj.lattitude) + "," + str(obj.longitude)
-                    walkB = destination
+            try:
+                start = request.query_params['start']
+            except Exception:
+                start = None
+            try:
+                destination = request.query_params['destination']
+            except Exception:
+                destination = None
+            try:
+                if (start):
+                    travelA = start
+                    travelB = str(obj.lattitude) + "," + str(obj.longitude)
+                    if (destination):
+                        walkA = str(obj.lattitude) + "," + str(obj.longitude)
+                        walkB = destination
+                    else:
+                        walkA = travelA
+                        walkB = travelB
+                    travelResponse = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
+                                                  params={
+                                                      'apiKey': HERE_API_KEY,
+                                                      'start0': travelA,
+                                                      'destination0': travelB,
+                                                      'mode': 'balanced;car;traffic:enabled',
+                                                      'summaryAttributes': 'traveltime,distance'
+                                                  })
+                    json_travel_data = json.loads(travelResponse.text)
+                    travelDistance = json_travel_data['response']['matrixEntry'][0]['summary']['distance']
+                    travelTime = json_travel_data['response']['matrixEntry'][0]['summary']['travelTime']
+                    walkingResponse = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
+                                                   params={
+                                                       'apiKey': HERE_API_KEY,
+                                                       'start0': walkA,
+                                                       'destination0': walkB,
+                                                       'mode': 'balanced;pedestrian',
+                                                       'summaryAttributes': 'traveltime,distance'
+                                                   })
+                    json_walking_data = json.loads(walkingResponse.text)
+                    walkingDistance = json_walking_data['response']['matrixEntry'][0]['summary']['distance']
+                    walkingTime = json_walking_data['response']['matrixEntry'][0]['summary']['travelTime']
+                    canWalk = False
+                    if (walkingDistance <= 2000): canWalk = True
+                    return {
+                        'travelDistance': travelDistance,
+                        'travelTime': travelTime,
+                        'walkingDistance': walkingDistance,
+                        'walkingTime': walkingTime,
+                        'canWalk': canWalk
+                    }
                 else:
-                    walkA = travelA
-                    walkB = travelB
-                travelResponse = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
-                                              params={
-                                                  'apiKey': HERE_API_KEY,
-                                                  'start0': travelA,
-                                                  'destination0': travelB,
-                                                  'mode': 'balanced;car;traffic:enabled',
-                                                  'summaryAttributes': 'traveltime,distance'
-                                              })
-                json_travel_data = json.loads(travelResponse.text)
-                travelDistance = json_travel_data['response']['matrixEntry'][0]['summary']['distance']
-                travelTime = json_travel_data['response']['matrixEntry'][0]['summary']['travelTime']
-                walkingResponse = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
-                                               params={
-                                                   'apiKey': HERE_API_KEY,
-                                                   'start0': walkA,
-                                                   'destination0': walkB,
-                                                   'mode': 'balanced;pedestrian',
-                                                   'summaryAttributes': 'traveltime,distance'
-                                               })
-                json_walking_data = json.loads(walkingResponse.text)
-                walkingDistance = json_walking_data['response']['matrixEntry'][0]['summary']['distance']
-                walkingTime = json_walking_data['response']['matrixEntry'][0]['summary']['travelTime']
-                canWalk = False
-                if (walkingDistance <= 2000): canWalk = True
-                return {
-                    'travelDistance': travelDistance,
-                    'travelTime': travelTime,
-                    'walkingDistance': walkingDistance,
-                    'walkingTime': walkingTime,
-                    'canWalk': canWalk
-                }
-            else:
+                    return None
+            except Exception:
                 return None
         except Exception:
             return None
@@ -248,16 +252,15 @@ class ParkingSerializer(serializers.ModelSerializer):
         etages_data = validated_data.pop('etages')
         horaires_data = validated_data.pop('horaires')
         tarifs_data = validated_data.pop('tarifs')
-        equipements_data = validated_data.pop('equipements')
+        equipements_list = validated_data.pop('equipements_id')
         termes_data = validated_data.pop('termes')
-        paiments_data = validated_data.pop('paiments')
+        paiments_list = validated_data.pop('paiments_id')
 
         etages_list = []
         tarifs_list = []
         horaires_list = []
         termes_list = []
-        equipements_list = []
-        paiments_list = []
+
 
         for h in horaires_data:
             horaireModel = Horaire(jour=h['jour'], HeureFermeture=h['HeureFermeture'],
@@ -272,24 +275,6 @@ class ParkingSerializer(serializers.ModelSerializer):
             tarifModel = Tarif(duree=t['duree'], prix=t['prix'])
             tarifModel.save()
             tarifs_list.append(tarifModel.idTarif)
-        for q in equipements_data:
-            equipModel = Equipement(designation=q['designation'])
-            try:
-                idEquip = q['idEquipement']
-                equipModel.id = idEquip
-            except Exception:
-                pass
-            equipModel.save()
-            equipements_list.append(equipModel.idEquipement)
-        for p in paiments_data:
-            paimentModel = Paiment(type=p['type'])
-            try:
-                idPaiment = p['idPaiment']
-                paimentModel.id = idPaiment
-            except Exception:
-                pass
-            paimentModel.save()
-            paiments_list.append(paimentModel.idPaiment)
         for term in termes_data:
             termModel = Terme(contenu=term['contenu'])
             termModel.save()

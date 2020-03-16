@@ -61,6 +61,7 @@ class ParkingView(viewsets.ModelViewSet):
             equipements_id = request.query_params['equipements'].split(',')
         except Exception:
             equipements_id = []
+        print(minDistance,maxDistance, minPrice, maxPrice,equipements_id)
         if(minDistance != 0 or maxDistance!=1000000000 and minPrice!=0 or maxPrice!=0 or equipements_id!=[]):
             try:
                 parkings = ParkingSerializer(Parking.objects.all(), many=True, context={'request': request}).data
@@ -80,33 +81,36 @@ class ParkingView(viewsets.ModelViewSet):
 
 
     def applyFilter(self,parking, filters):
-        distance = int(parking['routeInfo']['walkingDistance'])
-        minPrice = filters['minPrice']
-        maxPrice = filters['maxPrice']
-        equipements = filters['equipements_id']
-        hasPrice = False
-        if filters['minDistance'] <= distance <= filters['maxDistance']:
-            for tarif in parking['tarifs']:
-                price=int(tarif['prix'])
-                if minPrice <= price <= maxPrice:
-                    hasPrice = True
-            if hasPrice:
-                hasAllEquip = True
-                for equip in equipements:
-                    hasEquip=False
-                    for equipPark in parking['equipements']:
-                        if int(equipPark['idEquipement'])==int(equip):
-                            hasEquip=True
-                    if (hasEquip==False):
-                        hasAllEquip=False
-                if hasAllEquip:
-                    return True
+        try:
+            distance = int(parking['routeInfo']['walkingDistance'])
+            minPrice = filters['minPrice']
+            maxPrice = filters['maxPrice']
+            equipements = filters['equipements_id']
+            hasPrice = False
+            if filters['minDistance'] <= distance <= filters['maxDistance']:
+                for tarif in parking['tarifs']:
+                    price=int(tarif['prix'])
+                    if minPrice <= price <= maxPrice:
+                        hasPrice = True
+                if hasPrice:
+                    hasAllEquip = True
+                    for equip in equipements:
+                        hasEquip=False
+                        for equipPark in parking['equipements']:
+                            if int(equipPark['idEquipement'])==int(equip):
+                                hasEquip=True
+                        if (hasEquip==False):
+                            hasAllEquip=False
+                    if hasAllEquip:
+                        return True
+                    else:
+                        return False
                 else:
                     return False
             else:
                 return False
-        else:
-            return False
+        except Exception:
+            return True
     # def getOneParking(self, request, idParking=None):
     #     parking = get_object_or_404(self.queryset, id=idParking)
     #     serializer = ParkingSerializer(parking, context={'request': request})
