@@ -1,3 +1,4 @@
+import hashlib
 import io
 import json
 
@@ -18,6 +19,7 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rolepermissions.checkers import has_role
 
@@ -255,18 +257,44 @@ class DriverLoginViewJWT(TokenObtainPairView):
     user_serializer_class = AutomobilisteSerializer
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
+        try:
+            fromFacebook = request.data.pop('fromFb')
+            fbId = request.data['driverProfile']['idCompte']
+        except Exception:
+            fromFacebook = False
+            fbId=0
+        if not fromFacebook:
+            response = super().post(request, *args, **kwargs)
+            user = get_user_model().objects.get(username=request.data[get_user_model().USERNAME_FIELD])
+        else:
+            try:
+                driver = Automobiliste.objects.get(idCompte=fbId, compte='facebook')
+                user = driver.auth
+            except Exception:
+                data = request.data
+                data['password'] = hashlib.md5(fbId.encode("utf-8")).hexdigest()
+                user = AutomobilisteSerializer().create(data)
+            refresh = RefreshToken.for_user(user)
+            response = Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token)
+            }, status.HTTP_200_OK)
 
         if response.status_code == status.HTTP_200_OK:
-            user = get_user_model().objects.get(username=request.data[get_user_model().USERNAME_FIELD])
-            if ((not has_role(user, IsAdminUser)) and has_role(user,Driver)):
+            if ((not has_role(user, IsAdminUser)) and has_role(user, Driver)):
                 serialized_user = self.user_serializer_class(user)
                 response.data.update(serialized_user.data)
             else:
                 response = Response({
                     'detail': 'You are not allowed to perform this action'
                 }, status.HTTP_403_FORBIDDEN)
+            return response
         return response
+
+
+
+
+
 
 
 class AgentLoginViewJWT(TokenObtainPairView):
