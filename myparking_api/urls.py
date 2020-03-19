@@ -9,6 +9,7 @@ from .views import DriverLoginViewJWT, AgentLoginViewJWT, AdminLoginViewJWT
 
 router = routers.DefaultRouter()
 router.register('parking', views.ParkingView)
+router.register('optim_model', views.OpitmizationModelView, basename='')
 router.register('favoris', views.FavorisView)
 router.register('register/driver', views.RegistrationAutomobilisteView)
 router.register('register/agent', views.RegistrationAgentView)
@@ -16,6 +17,7 @@ router.register('filterInfos', views.FilterInfosView),
 router.register('reservation', views.ReservationView)
 router.register('equipements', views.EquipementView)
 router.register('paiements', views.PaiementView)
+
 
 urlpatterns = [
     path('', include(router.urls)),

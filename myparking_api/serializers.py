@@ -485,3 +485,5 @@ class ReservationSerializer(serializers.ModelSerializer):
         res = cloudinary.uploader.upload(b, folder='reservation')
         return res['url']
 
+class OptimizationSerializer(serializers.Serializer):
+    test = serializers.CharField(max_length=200)

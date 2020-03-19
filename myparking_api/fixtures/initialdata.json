@@ -1,0 +1,21 @@
+[
+ {
+    "model": "myparking_api.parking",
+    "pk": 555,
+    "fields": {
+      "nbEtages": 1,
+      "nbPlaces": 110,
+      "nom": "Testing dumping 21.29",
+      "adresse": "38, rue Guynemer. Code postal: 75006. Ville: Paris. Pays: France. M",
+      "imageUrl": "https://cdn.static01.nicematin.com/media/npo/1440w/2012/07/image-men11q206_tj_projet-parking-sablette-small.jpg",
+      "lattitude": 36.7351639,
+      "longitude": 3.1516975,
+      "horaires": 5,
+      "etages": 3,
+      "tarifs": 3,
+      "equipements": 1,
+      "paiments": 1,
+      "termes": [3]
+    }
+  }
+]

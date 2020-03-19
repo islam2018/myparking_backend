@@ -138,3 +138,6 @@ REST_FRAMEWORK = {
 
 ROLEPERMISSIONS_MODULE = 'myparking.roles'
 django_heroku.settings(locals())
+FIXTURE_DIRS = (
+   'myparking_api/fixtures/',
+)

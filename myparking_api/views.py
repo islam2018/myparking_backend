@@ -25,14 +25,15 @@ from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver, Agent
 from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment
 from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
-    EquipementSerializer, ReservationSerializer, FavorisSerializer, PaimentSerializer
-
+    EquipementSerializer, ReservationSerializer, FavorisSerializer, PaimentSerializer, OptimizationSerializer
+from optimisation_model.model_optim import optimize
 
 class EquipementView(viewsets.ModelViewSet):
     queryset = Equipement.objects.all()
     serializer_class = EquipementSerializer
     permission_classes = []
     authentication_classes = []
+
 
 class PaiementView(viewsets.ModelViewSet):
     queryset = Paiment.objects.all()
@@ -46,7 +47,6 @@ class ParkingView(viewsets.ModelViewSet):
     serializer_class = ParkingSerializer
     permission_classes = []
     authentication_classes = []
-
 
     def list(self, request, *args, **kwargs):
         try:
@@ -69,8 +69,8 @@ class ParkingView(viewsets.ModelViewSet):
             equipements_id = request.query_params['equipements'].split(',')
         except Exception:
             equipements_id = []
-        print(minDistance,maxDistance, minPrice, maxPrice,equipements_id)
-        if(minDistance != 0 or maxDistance!=1000000000 and minPrice!=0 or maxPrice!=0 or equipements_id!=[]):
+        print(minDistance, maxDistance, minPrice, maxPrice, equipements_id)
+        if (minDistance != 0 or maxDistance != 1000000000 and minPrice != 0 or maxPrice != 0 or equipements_id != []):
             try:
                 parkings = ParkingSerializer(Parking.objects.all(), many=True, context={'request': request}).data
                 res = filter(lambda parking: self.applyFilter(parking, {
@@ -84,11 +84,9 @@ class ParkingView(viewsets.ModelViewSet):
                 raise Http404
             return Response(res)
         else:
-            return super().list(request,*args, **kwargs)
+            return super().list(request, *args, **kwargs)
 
-
-
-    def applyFilter(self,parking, filters):
+    def applyFilter(self, parking, filters):
         try:
             distance = int(parking['routeInfo']['walkingDistance'])
             minPrice = filters['minPrice']
@@ -97,18 +95,18 @@ class ParkingView(viewsets.ModelViewSet):
             hasPrice = False
             if filters['minDistance'] <= distance <= filters['maxDistance']:
                 for tarif in parking['tarifs']:
-                    price=int(tarif['prix'])
+                    price = int(tarif['prix'])
                     if minPrice <= price <= maxPrice:
                         hasPrice = True
                 if hasPrice:
                     hasAllEquip = True
                     for equip in equipements:
-                        hasEquip=False
+                        hasEquip = False
                         for equipPark in parking['equipements']:
-                            if int(equipPark['idEquipement'])==int(equip):
-                                hasEquip=True
-                        if (hasEquip==False):
-                            hasAllEquip=False
+                            if int(equipPark['idEquipement']) == int(equip):
+                                hasEquip = True
+                        if (hasEquip == False):
+                            hasAllEquip = False
                     if hasAllEquip:
                         return True
                     else:
@@ -124,7 +122,6 @@ class ParkingView(viewsets.ModelViewSet):
     #     serializer = ParkingSerializer(parking, context={'request': request})
     #     return Response(serializer.data)
 
-
     # def get_permissions(self):
     #     permission_classes = []
     #     print("***********************",has_role(self.request.user,Agent))
@@ -136,18 +133,20 @@ class ParkingView(viewsets.ModelViewSet):
     #         permission_classes = [IsDriver]
     #     return [permission() for permission in permission_classes]
 
-class FilterInfosView(mixins.ListModelMixin,GenericViewSet):
+
+class FilterInfosView(mixins.ListModelMixin, GenericViewSet):
     queryset = Equipement.objects.all()
     serializer_class = EquipementSerializer
     permission_classes = []
     authentication_classes = []
+
     def list(self, request, *args, **kwargs):
         try:
             equipements = EquipementSerializer(self.queryset, many=True).data
         except Equipement.DoesNotExist:
             raise Http404
         try:
-            parkings = ParkingSerializer(Parking.objects.all(), many=True,context={'request': request}).data
+            parkings = ParkingSerializer(Parking.objects.all(), many=True, context={'request': request}).data
             minDistance = parkings[0]['routeInfo']['walkingDistance']
             maxDistance = 0
             minPrice = parkings[0]['tarifs'][0]['prix']
@@ -179,6 +178,7 @@ class FilterInfosView(mixins.ListModelMixin,GenericViewSet):
             }
         })
 
+
 class ReservationView(viewsets.ModelViewSet):
     queryset = Reservation.objects.all()
     permission_classes = []
@@ -208,12 +208,11 @@ class ReservationView(viewsets.ModelViewSet):
         try:
             automobiliste_id = request.query_params['automobiliste_id']
             query = Reservation.objects.filter(automobiliste_id=automobiliste_id)
-            data = ReservationSerializer(query,many=True,context={'request': request}).data
+            data = ReservationSerializer(query, many=True, context={'request': request}).data
             return Response(data)
         except Exception:
             print("catched exception")
             return super().list(request, *args, **kwargs)
-
 
 
 class RegistrationAutomobilisteView(viewsets.ModelViewSet):
@@ -228,6 +227,7 @@ class RegistrationAgentView(viewsets.ModelViewSet):
     permission_classes = []
     authentication_classes = []
     serializer_class = AgentSerializer
+
 
 class FavorisView(viewsets.ModelViewSet):
     queryset = Automobiliste.objects.all()
@@ -259,7 +259,7 @@ class DriverLoginViewJWT(TokenObtainPairView):
 
         if response.status_code == status.HTTP_200_OK:
             user = get_user_model().objects.get(username=request.data[get_user_model().USERNAME_FIELD])
-            if ((not has_role(user, IsAdminUser)) and has_role(user,Driver)):
+            if ((not has_role(user, IsAdminUser)) and has_role(user, Driver)):
                 serialized_user = self.user_serializer_class(user)
                 response.data.update(serialized_user.data)
             else:
@@ -277,7 +277,7 @@ class AgentLoginViewJWT(TokenObtainPairView):
 
         if response.status_code == status.HTTP_200_OK:
             user = get_user_model().objects.get(username=request.data[get_user_model().USERNAME_FIELD])
-            if ((not has_role(user, IsAdminUser)) and has_role(user,Agent)):
+            if ((not has_role(user, IsAdminUser)) and has_role(user, Agent)):
                 serialized_user = self.user_serializer_class(user)
                 response.data.update(serialized_user.data)
             else:
@@ -286,6 +286,7 @@ class AgentLoginViewJWT(TokenObtainPairView):
                 }, status.HTTP_403_FORBIDDEN)
 
         return response
+
 
 class AdminLoginViewJWT(TokenObtainPairView):
     user_serializer_class = AdminSerializer
@@ -304,12 +305,13 @@ class AdminLoginViewJWT(TokenObtainPairView):
                 response.data.update(serialized_user.data)
         return response
 
+
 class SearchView(APIView):
-    #permission_classes = [IsDriver]
+    # permission_classes = [IsDriver]
     def get(self, request):
         query = None
         try:
-            query =  request.query_params['query']
+            query = request.query_params['query']
         except Exception:
             return Response({
                 "detail": "Bad request parameters"
@@ -323,7 +325,7 @@ class SearchView(APIView):
                     'in': '36.0998,3.2953;r=300000',
                     'q': query
                 }
-                response = requests.get(url,params,headers=headers)
+                response = requests.get(url, params, headers=headers)
                 return Response(json.loads(response.text))
             else:
                 return Response({
@@ -333,3 +335,13 @@ class SearchView(APIView):
             return Response({
                 "detail": "Request error"
             }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OpitmizationModelView(viewsets.ViewSet):
+    def list(self, request, *args, **kwargs):
+        return Response({"answer": optimize()})
+
+# class ParkingCreationView(viewsets.ModelViewSet):
+#     queryset = Parking.objects.all()
+#     def create(self, request, *args, **kwargs):
+#         return super().create(request, *args, **kwargs)
