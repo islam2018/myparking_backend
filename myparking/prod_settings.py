@@ -85,7 +85,7 @@ DATABASES = {
         'ENGINE': 'djongo',
         # 'NAME': 'test_p'
         'NAME': 'heroku_rznd846m',
-        'HOST': 'mongodb://<dbuser>:<dbpassword>@ds045297.mlab.com:45297/heroku_rznd846m'
+        'HOST': 'mongodb://parking:parking0@ds045297.mlab.com:45297/heroku_rznd846m'
 
     }
 }
