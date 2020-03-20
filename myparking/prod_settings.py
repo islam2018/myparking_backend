@@ -84,8 +84,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         # 'NAME': 'test_p'
-        'NAME': 'myparking_db',
-        'HOST': 'mongodb://admin:HNDtdd50714@node30751-myparking.jcloud-ver-jpe.ik-server.com:27017'
+        'NAME': 'heroku_rznd846m',
+        'HOST': 'mongodb://<dbuser>:<dbpassword>@ds045297.mlab.com:45297/heroku_rznd846m'
 
     }
 }
