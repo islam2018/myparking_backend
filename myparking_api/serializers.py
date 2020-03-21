@@ -63,6 +63,7 @@ class TarifSerializer(serializers.ModelSerializer):
 
 class EquipementSerializer(serializers.ModelSerializer):
     idEquipement = serializers.IntegerField(required=False)
+
     class Meta:
         model = Equipement
         fields = ['idEquipement', 'designation', 'iconUrl']
@@ -70,25 +71,28 @@ class EquipementSerializer(serializers.ModelSerializer):
         #     'idEquipement': {'read_only': True}
         # }
 
+
 class PaimentSerializer(serializers.ModelSerializer):
     idPaiment = serializers.IntegerField(required=False)
+
     class Meta:
         model = Paiment
         fields = ['idPaiment', 'type', 'iconUrl']
 
+
 class PaimentInstanceSerializer(serializers.ModelSerializer):
     idPaimentInstance = serializers.IntegerField(required=False)
+
     class Meta:
         model = PaiementInstance
         fields = ['idPaimentInstance', 'montant', 'date']
 
 
-
 class ParkingSerializer(serializers.ModelSerializer):
-    horaires = HoraireSerializer(many=True,write_only=True)
+    horaires = HoraireSerializer(many=True, write_only=True)
     etages = EtageSerializer(many=True)
     tarifs = TarifSerializer(many=True)
-    equipements = EquipementSerializer(many=True , read_only=True)
+    equipements = EquipementSerializer(many=True, read_only=True)
     equipements_id = serializers.ListField(write_only=True)
     paiments = PaimentSerializer(many=True, read_only=True)
     paiments_id = serializers.ListField(write_only=True)
@@ -101,8 +105,11 @@ class ParkingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Parking
         fields = [
-            'idParking', 'nbEtages', 'nbPlaces', 'nbPlacesDisponibles', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaires',
-            'etages', 'tarifs', 'termes', 'paiments', 'paiments_id', 'equipements', 'equipements_id', 'horairesStatus', 'ouvert' , 'routeInfo']
+            'idParking', 'nbEtages', 'nbPlaces', 'nbPlacesDisponibles', 'nom', 'adresse', 'imageUrl', 'lattitude',
+            'longitude', 'horaires',
+            'etages', 'tarifs', 'termes', 'paiments', 'paiments_id', 'equipements', 'equipements_id',
+            'horairesStatus', 'ouvert',
+            'routeInfo']
         extra_kwargs = {
             'idParking': {'read_only': True},
             'ouvert': {'read_only': True},
@@ -110,96 +117,54 @@ class ParkingSerializer(serializers.ModelSerializer):
             'nbPlacesDisponibles': {'read_only': True},
             'horairesStatus': {'read_only': True},
         }
-    def get_nbPlacesDisponibles(self,object):
+
+    def get_nbPlacesDisponibles(self, object):
         return random.randrange(object.nbPlaces)
         pass
 
     def get_routeInfo(self, obj):
         try:
-            request = self.context['request']
+            index = (*self.instance,).index(obj)
+            travelData = self.context['travelData']
             try:
-                start = request.query_params['start']
-            except Exception:
-                start = None
-            try:
-                destination = request.query_params['destination']
-            except Exception:
-                destination = None
-            try:
-                if (start):
-                    travelA = start
-                    travelB = str(obj.lattitude) + "," + str(obj.longitude)
-                    if (destination):
-                        walkA = str(obj.lattitude) + "," + str(obj.longitude)
-                        walkB = destination
-                    else:
-                        walkA = travelA
-                        walkB = travelB
-                    travelResponse = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
-                                                  params={
-                                                      'apiKey': HERE_API_KEY,
-                                                      'start0': travelA,
-                                                      'destination0': travelB,
-                                                      'mode': 'balanced;car;traffic:enabled',
-                                                      'summaryAttributes': 'traveltime,distance'
-                                                  })
-                    json_travel_data = json.loads(travelResponse.text)
-                    travelDistance = json_travel_data['response']['matrixEntry'][0]['summary']['distance']
-                    travelTime = json_travel_data['response']['matrixEntry'][0]['summary']['travelTime']
-                    walkingResponse = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
-                                                   params={
-                                                       'apiKey': HERE_API_KEY,
-                                                       'start0': walkA,
-                                                       'destination0': walkB,
-                                                       'mode': 'balanced;pedestrian',
-                                                       'summaryAttributes': 'traveltime,distance'
-                                                   })
-                    json_walking_data = json.loads(walkingResponse.text)
-                    walkingDistance = json_walking_data['response']['matrixEntry'][0]['summary']['distance']
-                    walkingTime = json_walking_data['response']['matrixEntry'][0]['summary']['travelTime']
-                    canWalk = False
-                    if (walkingDistance <= 2000): canWalk = True
-                    return {
-                        'travelDistance': travelDistance,
-                        'travelTime': travelTime,
-                        'walkingDistance': walkingDistance,
-                        'walkingTime': walkingTime,
-                        'canWalk': canWalk
-                    }
-                else:
-                    return None
+                walkingData = self.context['walkingData']
+                return {
+                    'travelDistance': travelData[0][index],
+                    'travelTime': travelData[1][index],
+                    'walkingDistance': walkingData[0][index],
+                    'walkingTime': walkingData[1][index],
+                    'canWalk': walkingData[0][index] < 2000
+
+                }
             except Exception:
                 return None
         except Exception:
             return None
 
-
-
-    def get_horairesStatus(self,obj):
+    def get_horairesStatus(self, obj):
         horaires_id_list = list(obj.horaires_id)
         horaires_list = []
         field_jour = Horaire._meta.get_field('jour')
         field_heure_ouv = Horaire._meta.get_field('HeureOuverture')
         field_heure_ferm = Horaire._meta.get_field('HeureFermeture')
-        days= ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+        days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
         res = []
         for horaire_id in horaires_id_list:
             horaire = Horaire.objects.get(id=horaire_id)
             horaires_list.append(horaire)
         horaires_list = sorted(horaires_list, key=lambda x: getattr(x, field_jour.attname))
-        i=0
+        i = 0
         while (i < len(horaires_list)):
             horaire = horaires_list[i]
 
             dayIndex = getattr(horaire, field_jour.attname)
             heure_ouv = getattr(horaire, field_heure_ouv.attname)
             heure_ferm = getattr(horaire, field_heure_ferm.attname)
-            start_day = days[dayIndex-1]
+            start_day = days[dayIndex - 1]
             temp = []
             temp.append(start_day)
             stop = False
-            j = i +1
-
+            j = i + 1
 
             while (j < len(horaires_list) and stop == False):
 
@@ -208,23 +173,23 @@ class ParkingSerializer(serializers.ModelSerializer):
                 heure_ouv2 = getattr(horaire2, field_heure_ouv.attname)
                 heure_ferm2 = getattr(horaire2, field_heure_ferm.attname)
 
-                if (day2Index==dayIndex+1 and heure_ferm == heure_ferm2 and heure_ouv2 == heure_ouv):
-                        day_desig = days[day2Index-1]
-                        dayIndex = day2Index
-                        temp.append(day_desig)
-                        j=j+1
+                if (day2Index == dayIndex + 1 and heure_ferm == heure_ferm2 and heure_ouv2 == heure_ouv):
+                    day_desig = days[day2Index - 1]
+                    dayIndex = day2Index
+                    temp.append(day_desig)
+                    j = j + 1
                 else:
-                    stop=True
+                    stop = True
             res.append({
-                'days':temp,
+                'days': temp,
                 'HeureOuverture': heure_ouv,
                 'HeureFermeture': heure_ferm
             })
-            if (stop): i=j
-            else: i=j+1
+            if (stop):
+                i = j
+            else:
+                i = j + 1
         return res
-
-
 
     def get_ouvert(self, obj):
         horaires_list = list(obj.horaires_id)
@@ -238,15 +203,14 @@ class ParkingSerializer(serializers.ModelSerializer):
             field_heure_ferm = Horaire._meta.get_field('HeureFermeture')
             day = getattr(horaire, field_jour.attname)
             if today == day:
-                check_time =  datetime.utcnow().time()
+                check_time = datetime.utcnow().time()
                 begin_time = getattr(horaire, field_heure_ouv.attname)
-                end_time =  getattr(horaire, field_heure_ferm.attname)
+                end_time = getattr(horaire, field_heure_ferm.attname)
                 if begin_time < end_time:
                     ouvert_status = check_time >= begin_time and check_time <= end_time
                 else:  # crosses midnight
                     ouvert_status = check_time >= begin_time or check_time <= end_time
         return 'Ouvert' if ouvert_status else 'Fermé'
-
 
     def create(self, validated_data):
         etages_data = validated_data.pop('etages')
@@ -260,7 +224,6 @@ class ParkingSerializer(serializers.ModelSerializer):
         tarifs_list = []
         horaires_list = []
         termes_list = []
-
 
         for h in horaires_data:
             horaireModel = Horaire(jour=h['jour'], HeureFermeture=h['HeureFermeture'],
@@ -294,6 +257,7 @@ class ParkingSerializer(serializers.ModelSerializer):
 class AutomobilisteProfileSerializer(serializers.ModelSerializer):
     compte = serializers.CharField(required=False)
     idCompte = serializers.CharField(required=False)
+
     class Meta:
         model = Automobiliste
         fields = ['idAutomobiliste', 'nom', 'prenom', 'numTel', 'compte', 'idCompte']
@@ -335,9 +299,11 @@ class AutomobilisteSerializer(serializers.HyperlinkedModelSerializer):
 
         return instance
 
+
 class FavorisSerializer(serializers.ModelSerializer):
     favoris = ParkingSerializer(many=True, read_only=True)
     favoris_id = serializers.ListField(write_only=True)
+
     class Meta:
         model = Automobiliste
         fields = ['idAutomobiliste', 'favoris', 'favoris_id']
@@ -352,9 +318,6 @@ class FavorisSerializer(serializers.ModelSerializer):
             driver.favoris_id.add(fav_id)
         driver.save()
         return driver
-
-
-
 
 
 class AgentProfileSerializer(serializers.ModelSerializer):
@@ -430,9 +393,8 @@ class ReservationSerializer(serializers.ModelSerializer):
                         'dateSortiePrevue': {'required': False}}
 
     def create(self, validated_data):
-
         paiment_data = validated_data.pop('paiementInstance')
-        paiment = PaiementInstance(montant=paiment_data['montant'],date=paiment_data['date'])
+        paiment = PaiementInstance(montant=paiment_data['montant'], date=paiment_data['date'])
         paiment.save()
         dateEntree = validated_data.pop('dateEntreePrevue')
         dateSortie = validated_data.pop('dateSortiePrevue')
@@ -443,7 +405,7 @@ class ReservationSerializer(serializers.ModelSerializer):
         data_to_hash = {
             "codeReservation": str(code),
             "dateEntree": str(dateEntree),
-            "dateSortie":str(dateSortie),
+            "dateSortie": str(dateSortie),
             "idPaiement": paiment.idPaimentInstance
         }
 
@@ -451,7 +413,7 @@ class ReservationSerializer(serializers.ModelSerializer):
         qrUrl = self.generateQR(hashed)
         reservation = Reservation(paiementInstance=paiment,
                                   hashId=hashed,
-                                  qrUrl = qrUrl,
+                                  qrUrl=qrUrl,
                                   codeReservation=code,
                                   dateEntreePrevue=dateEntree,
                                   dateSortiePrevue=dateSortie,
@@ -468,7 +430,7 @@ class ReservationSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-    def generateQR(self,content):
+    def generateQR(self, content):
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -484,6 +446,7 @@ class ReservationSerializer(serializers.ModelSerializer):
         b.seek(0)
         res = cloudinary.uploader.upload(b, folder='reservation')
         return res['url']
+
 
 class OptimizationSerializer(serializers.Serializer):
     test = serializers.CharField(max_length=200)

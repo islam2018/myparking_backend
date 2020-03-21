@@ -5,6 +5,7 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 import qrcode
+import numpy as np
 import requests
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
@@ -23,10 +24,12 @@ from rolepermissions.checkers import has_role
 
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver, Agent
+from .looseDistance import parkingsInRadius
 from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment
 from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
     EquipementSerializer, ReservationSerializer, FavorisSerializer, PaimentSerializer, OptimizationSerializer
-from optimisation_model.model_optim import optimize
+from optimisation_model.model_optim import optimize, Object
+
 
 class EquipementView(viewsets.ModelViewSet):
     queryset = Equipement.objects.all()
@@ -49,6 +52,9 @@ class ParkingView(viewsets.ModelViewSet):
     authentication_classes = []
 
     def list(self, request, *args, **kwargs):
+
+        # allData = list(filter(lambda row: True, Parking.objects.all()[0:10]))
+        # allData = Parking.objects.all()[0:10].only('lattitude', 'longitude')
         try:
             minDistance = request.query_params['minDistance']
         except Exception:
@@ -69,69 +75,129 @@ class ParkingView(viewsets.ModelViewSet):
             equipements_id = request.query_params['equipements'].split(',')
         except Exception:
             equipements_id = []
-        print(minDistance, maxDistance, minPrice, maxPrice, equipements_id)
+
         if (minDistance != 0 or maxDistance != 1000000000 and minPrice != 0 or maxPrice != 0 or equipements_id != []):
+
             try:
-                parkings = ParkingSerializer(Parking.objects.all(), many=True, context={'request': request}).data
-                res = filter(lambda parking: self.applyFilter(parking, {
-                    'minDistance': int(minDistance),
-                    'maxDistance': int(maxDistance),
-                    'minPrice': int(minPrice),
-                    'maxPrice': int(maxPrice),
-                    'equipements_id': equipements_id
-                }), parkings)
+                start = request.query_params['start']
+            except Exception:
+                start = None
+            try:
+                destination = request.query_params['destination']
+            except Exception:
+                destination = None
+            try:
+                # do destination later instead of start
+                allData = parkingsInRadius(Parking.objects.all(), start)
+                # should consider parkings more then 100 because of here api request copy from optim _model
+                travelData = np.empty([2, allData.__len__()], dtype='int')
+                walkingData = np.empty([2, allData.__len__()], dtype='int')
+                if (start):
+                    travelA = start
+                    objectDestinations = Object()
+                    for index, obj in enumerate(allData):
+                        setattr(objectDestinations, 'destination' + str(index),
+                                str(obj.lattitude) + "," + str(obj.longitude))
+                    if (destination):
+                        travelA = destination
+                    travelResponse = requests.get(
+                        "https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
+                        params={
+                            'apiKey': HERE_API_KEY,
+                            'start0': travelA,
+                            **objectDestinations.__dict__,
+                            'mode': 'balanced;car;traffic:enabled',
+                            'summaryAttributes': 'traveltime,distance'
+                        })
+                    json_travelData = json.loads(travelResponse.text)
+                    travelMatrix = json_travelData['response']['matrixEntry']
+                    for i in travelMatrix:
+                        travelData[0][i['destinationIndex']] = i['summary']['distance']  # first is distance
+                        travelData[1][i['destinationIndex']] = i['summary']['travelTime']  # second is time
+
+                    # travelDistance = json_travel_data['response']['matrixEntry'][0]['summary']['distance']
+                    # travelTime = json_travel_data['response']['matrixEntry'][0]['summary']['travelTime']
+                    walkingResponse = requests.get(
+                        "https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
+                        params={
+                            'apiKey': HERE_API_KEY,
+                            'start0': travelA,
+                            **objectDestinations.__dict__,
+                            'mode': 'balanced;pedestrian',
+                            'summaryAttributes': 'traveltime,distance'
+                        })
+                    json_walkingData = json.loads(walkingResponse.text)
+                    walkingMatrix = json_walkingData['response']['matrixEntry']
+                    for i in walkingMatrix:
+                        walkingData[0][i['destinationIndex']] = i['summary']['distance']
+                        walkingData[1][i['destinationIndex']] = i['summary']['travelTime']
+
+                parkings = ParkingSerializer(allData, many=True,
+                                             context={'request': request,
+                                                      'walkingData': walkingData,
+                                                      'travelData': travelData}).data
+                # res = filter(lambda parking: applyFilter(self, parking, {
+                #     'minDistance': int(minDistance),
+                #     'maxDistance': int(maxDistance),
+                #     'minPrice': int(minPrice),
+                #     'maxPrice': int(maxPrice),
+                #     'equipements_id': equipements_id
+                # }), parkings)
             except Parking.DoesNotExist:
                 raise Http404
-            return Response(res)
+            return Response(parkings)
         else:
             return super().list(request, *args, **kwargs)
 
-    def applyFilter(self, parking, filters):
-        try:
-            distance = int(parking['routeInfo']['walkingDistance'])
-            minPrice = filters['minPrice']
-            maxPrice = filters['maxPrice']
-            equipements = filters['equipements_id']
-            hasPrice = False
-            if filters['minDistance'] <= distance <= filters['maxDistance']:
-                for tarif in parking['tarifs']:
-                    price = int(tarif['prix'])
-                    if minPrice <= price <= maxPrice:
-                        hasPrice = True
-                if hasPrice:
-                    hasAllEquip = True
-                    for equip in equipements:
-                        hasEquip = False
-                        for equipPark in parking['equipements']:
-                            if int(equipPark['idEquipement']) == int(equip):
-                                hasEquip = True
-                        if (hasEquip == False):
-                            hasAllEquip = False
-                    if hasAllEquip:
-                        return True
-                    else:
-                        return False
+
+def applyFilter(self, parking, filters):
+    try:
+        distance = int(parking['routeInfo']['walkingDistance'])
+        minPrice = filters['minPrice']
+        maxPrice = filters['maxPrice']
+        equipements = filters['equipements_id']
+        hasPrice = False
+        if filters['minDistance'] <= distance <= filters['maxDistance']:
+            for tarif in parking['tarifs']:
+                price = int(tarif['prix'])
+                if minPrice <= price <= maxPrice:
+                    hasPrice = True
+            if hasPrice:
+                hasAllEquip = True
+                for equip in equipements:
+                    hasEquip = False
+                    for equipPark in parking['equipements']:
+                        if int(equipPark['idEquipement']) == int(equip):
+                            hasEquip = True
+                    if (hasEquip == False):
+                        hasAllEquip = False
+                if hasAllEquip:
+                    return True
                 else:
                     return False
             else:
                 return False
-        except Exception:
-            return True
-    # def getOneParking(self, request, idParking=None):
-    #     parking = get_object_or_404(self.queryset, id=idParking)
-    #     serializer = ParkingSerializer(parking, context={'request': request})
-    #     return Response(serializer.data)
+        else:
+            return False
+    except Exception:
+        return True
 
-    # def get_permissions(self):
-    #     permission_classes = []
-    #     print("***********************",has_role(self.request.user,Agent))
-    #     if self.action == 'create' or self.action == 'update' or self.action == 'partial_update' or self.action == 'destroy':
-    #         permission_classes = [IsAdminUser]
-    #     elif self.action == 'retrieve' :
-    #         permission_classes = [IsAgent]
-    #     elif self.action == 'list' :
-    #         permission_classes = [IsDriver]
-    #     return [permission() for permission in permission_classes]
+
+# def getOneParking(self, request, idParking=None):
+#     parking = get_object_or_404(self.queryset, id=idParking)
+#     serializer = ParkingSerializer(parking, context={'request': request})
+#     return Response(serializer.data)
+
+# def get_permissions(self):
+#     permission_classes = []
+#     print("***********************",has_role(self.request.user,Agent))
+#     if self.action == 'create' or self.action == 'update' or self.action == 'partial_update' or self.action == 'destroy':
+#         permission_classes = [IsAdminUser]
+#     elif self.action == 'retrieve' :
+#         permission_classes = [IsAgent]
+#     elif self.action == 'list' :
+#         permission_classes = [IsDriver]
+#     return [permission() for permission in permission_classes]
 
 
 class FilterInfosView(mixins.ListModelMixin, GenericViewSet):
