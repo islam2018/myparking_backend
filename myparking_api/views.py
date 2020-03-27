@@ -252,6 +252,22 @@ class FavorisView(viewsets.ModelViewSet):
                 'detail': 'Internal server error'
             }, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def delete(self, request, *args, **kwargs):
+        try:
+            idAutomobiliste = request.query_params['automobiliste']
+            query = Automobiliste.objects.get(id=idAutomobiliste)
+            serializer = FavorisSerializer(query,context={'request': request})
+            serializer.delete(request.data)
+            return Response(serializer.data)
+        except Http404:
+            return Response({
+                'detail': 'Automobiliste non existant'
+            }, status.HTTP_404_NOT_FOUND)
+        except Exception:
+            return Response({
+                'detail': 'Internal server error'
+            }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class DriverLoginViewJWT(TokenObtainPairView):
     user_serializer_class = AutomobilisteSerializer

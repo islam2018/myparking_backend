@@ -353,6 +353,18 @@ class FavorisSerializer(serializers.ModelSerializer):
         driver.save()
         return driver
 
+    def delete(self, validated_data):
+        request = self.context['request']
+        favoris_id = validated_data.pop('favoris_id')
+        print(favoris_id)
+        idAutomobiliste = request.query_params['automobiliste']
+        driver = Automobiliste.objects.get(id=idAutomobiliste)
+        for id in favoris_id:
+            driver.favoris_id.remove(id)
+        driver.save()
+        return driver
+
+
 
 
 
