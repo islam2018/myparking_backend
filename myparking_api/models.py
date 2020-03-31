@@ -28,10 +28,10 @@ class Tarif(models.Model):
     objects = DjongoManager()
 
 
-
 class EquipementManager(DjongoManager):
     def get_by_natural_key(self, idEquipement):
         return self.get(idEquipement=idEquipement)
+
 
 class Equipement(models.Model):
     idEquipement = models.AutoField(primary_key=True)
@@ -41,7 +41,6 @@ class Equipement(models.Model):
     @property
     def idEquipement(self):
         return self.id
-
 
 
 class Horaire(models.Model):
@@ -192,4 +191,47 @@ class Evaluation(models.Model):
     note = models.IntegerField()
     automobiliste = models.EmbeddedField(model_container=Automobiliste)
 
+    objects = DjongoManager()
+
+
+class Assignment(models.Model):
+    idAssignment = models.AutoField(primary_key=True)
+    idUser = models.ForeignKey(Automobiliste, on_delete=models.CASCADE)
+    idParking = models.ForeignKey(Parking, on_delete=models.CASCADE)
+    value = models.IntegerField(default=0)  # -1 affecté, 0...N priorities for recommended parkings
+    timestamp = models.IntegerField(default=0)
+
+    # idCluster = models.ForeignKey(OptimizationCluster, on_delete=models.CASCADE)
+    @property
+    def idAssignment(self):
+        return self.id
+
+    objects = DjongoManager()
+
+
+class Distance(models.Model):
+    idDistance = models.AutoField(primary_key=True)
+    idUser = models.ForeignKey(Automobiliste, on_delete=models.CASCADE)  # destination lat lon are here for now
+    destinationLat = models.FloatField(default=36.7449434)
+    destinationLon = models.FloatField(default=3.1913014)
+    idParking = models.ForeignKey(Parking, on_delete=models.CASCADE)
+    distance = models.FloatField(default=0.0)
+
+    @property
+    def idDistance(self):
+        return self.id
+
+    objects = DjongoManager()
+
+
+class OptimizationCluster(models.Model):
+    idCluster = models.AutoField(primary_key=True)
+    parkings = models.ArrayReferenceField(to=Parking, on_delete=models.DO_NOTHING, blank=True)
+    users = models.ArrayReferenceField(to=Automobiliste, on_delete=models.DO_NOTHING, blank=True)
+    assignments = models.ArrayReferenceField(to=Assignment, on_delete=models.DO_NOTHING, blank=True)
+    distanceMatrix = models.ArrayReferenceField(to=Distance, on_delete=models.DO_NOTHING, blank=True, default=[])
+
+    @property
+    def idCluster(self):
+        return self.id
     objects = DjongoManager()

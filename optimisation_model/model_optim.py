@@ -46,15 +46,17 @@ def optimize():
     # objective function
     model.objective = minimize(
         xsum(F(D, PLACES_LIBRES, NB_PLACES, i, j) * x[i][j] for i in range(NU) for j in range(NP))
-        + xsum((NP - xsum(x[i][j] for j in range(NP))) for i in range(NU)))
+        + xsum(((NP - xsum(x[i][j] for j in range(NP))) / NP) for i in range(NU))
+        + xsum(((NU - xsum(x[i][j] for i in range(NU))) / NU) for j in range(NP))
+    )
 
     # each parking has enough space
     for j in range(NP):
         model += xsum(x[i][j] for i in range(NU)) <= PLACES_LIBRES[j]
 
     # each user has at least 2 proposisionts
-    for i in range(NU):
-        model += xsum(x[i][j] for j in range(NP)) >= 2
+    # for i in range(NU):
+    #     model += xsum(x[i][j] for j in range(NP)) >= 2
 
     status = model.optimize()
 

@@ -1,3 +1,9 @@
+matplotlib
+seaborn
+pandas
+scikit-learn
+geopy
+shapely
 numpy
 mip
 bson==0.5.8
