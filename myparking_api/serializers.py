@@ -96,23 +96,22 @@ class ParkingSerializer(serializers.ModelSerializer):
     ouvert = serializers.SerializerMethodField()
     horairesStatus = serializers.SerializerMethodField()
     routeInfo = serializers.SerializerMethodField()
-    nbPlacesDisponibles = serializers.SerializerMethodField()
+
 
     class Meta:
         model = Parking
         fields = [
-            'idParking', 'nbEtages', 'nbPlaces', 'nbPlacesDisponibles', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaires',
+            'idParking', 'nbEtages', 'nbPlaces', 'nbPlacesLibres', 'nom', 'adresse', 'imageUrl', 'lattitude', 'longitude', 'horaires',
             'etages', 'tarifs', 'termes', 'paiments', 'paiments_id', 'equipements', 'equipements_id', 'horairesStatus', 'ouvert' , 'routeInfo']
         extra_kwargs = {
             'idParking': {'read_only': True},
             'ouvert': {'read_only': True},
             'routeInfo': {'read_only': True},
-            'nbPlacesDisponibles': {'read_only': True},
+            'nbPlacesLibres': {'read_only': True},
             'horairesStatus': {'read_only': True},
         }
-    def get_nbPlacesDisponibles(self,object):
-        return random.randrange(object.nbPlaces)
-        pass
+
+
 
     def get_routeInfo(self, obj):
         try:
@@ -280,6 +279,7 @@ class ParkingSerializer(serializers.ModelSerializer):
             termModel.save()
             termes_list.append(termModel.idTerme)
         parking = Parking(**validated_data)
+        parking.nbPlacesLibres = validated_data['nbPlaces']
         parking.horaires_id = horaires_list
         parking.etages_id = etages_list
         parking.tarifs_id = tarifs_list

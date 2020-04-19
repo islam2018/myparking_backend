@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rolepermissions',
     'myparking_api',
+    'model_optim'
 
 ]
 

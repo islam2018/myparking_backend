@@ -84,6 +84,7 @@ class Parking(models.Model):
     idParking = models.AutoField(primary_key=True)
     nbEtages = models.IntegerField()
     nbPlaces = models.IntegerField()
+    nbPlacesLibres = models.IntegerField()
     nom = models.TextField()
     adresse = models.TextField()
     imageUrl = models.TextField()
@@ -172,3 +173,28 @@ class Evaluation(models.Model):
     automobiliste = models.EmbeddedField(model_container=Automobiliste)
 
     objects = DjongoManager()
+
+
+
+class Porposition(models.Model):
+    idProposition = models.AutoField(primary_key=True)
+    automobiliste = models.ForeignKey(to=Automobiliste,on_delete=models.CASCADE)
+    parking = models.ForeignKey(to=Parking, on_delete=models.CASCADE)
+    value = models.IntegerField(default=0)
+
+    @property
+    def idProposition(self):
+        return self.id
+
+class Cluster(models.Model):
+    idCluster = models.AutoField(primary_key=True)
+    label = models.TextField()
+    centroid = models.ListField()
+    parkings = models.ArrayReferenceField(to=Parking,on_delete=models.CASCADE)
+    drivers = models.ArrayReferenceField(to=Automobiliste, on_delete=models.CASCADE)
+    propositions = models.ArrayReferenceField(to=Porposition, on_delete=models.CASCADE)
+    objects = DjongoManager()
+
+    @property
+    def idCluster(self):
+        return self.id
