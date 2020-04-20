@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 
 from model_optim.assignement import assignToCluster
 from model_optim.helpers.calculateDistance import calculateDistance
+from model_optim.optimization import optimize
 from model_optim.persistance import saveParkingsClusters
-from myparking_api.models import Parking
+from myparking_api.models import Parking, Automobiliste
 
 """ Generate clusters of parkings : 
     using DBSCAN to cluster parkings in database
@@ -50,4 +51,5 @@ def getParkingClusters():
 
 
 # getParkingClusters()
-# assignToCluster(1,36.725,3.045)
+#assignToCluster(1)
+optimize(1)
