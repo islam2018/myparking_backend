@@ -171,7 +171,20 @@ class FilterInfosView(mixins.ListModelMixin,GenericViewSet):
         except Equipement.DoesNotExist:
             raise Http404
         try:
-            parkings = ParkingSerializer(Parking.objects.all(), many=True,context={'request': request}).data
+            try:
+                start = request.query_params['start']
+            except Exception:
+                start = None
+            try:
+                destination = request.query_params['destination']
+            except Exception:
+                destination = None
+
+            queryParkings = getRecomendedParkings(request.query_params['automobiliste'])
+            (travelData, walkingData) = calculateRouteInfo(queryParkings, start, destination)
+            parkings = ParkingSerializer(queryParkings, many=True, context={
+                'request': request, 'walkingData': walkingData,
+                'travelData': travelData}).data
             minDistance = parkings[0]['routeInfo']['walkingDistance']
             maxDistance = 0
             minPrice = parkings[0]['tarifs'][0]['prix']
