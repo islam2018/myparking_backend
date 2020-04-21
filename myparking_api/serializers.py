@@ -115,58 +115,17 @@ class ParkingSerializer(serializers.ModelSerializer):
 
     def get_routeInfo(self, obj):
         try:
-            request = self.context['request']
+            index = (*self.instance,).index(obj)
+            travelData = self.context['travelData']
             try:
-                start = request.query_params['start']
-            except Exception:
-                start = None
-            try:
-                destination = request.query_params['destination']
-            except Exception:
-                destination = None
-            try:
-                if (start):
-                    travelA = start
-                    travelB = str(obj.lattitude) + "," + str(obj.longitude)
-                    if (destination):
-                        walkA = str(obj.lattitude) + "," + str(obj.longitude)
-                        walkB = destination
-                    else:
-                        walkA = travelA
-                        walkB = travelB
-                    travelResponse = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
-                                                  params={
-                                                      'apiKey': HERE_API_KEY,
-                                                      'start0': travelA,
-                                                      'destination0': travelB,
-                                                      'mode': 'balanced;car;traffic:enabled',
-                                                      'summaryAttributes': 'traveltime,distance'
-                                                  })
-                    json_travel_data = json.loads(travelResponse.text)
-                    travelDistance = json_travel_data['response']['matrixEntry'][0]['summary']['distance']
-                    travelTime = json_travel_data['response']['matrixEntry'][0]['summary']['travelTime']
-                    walkingResponse = requests.get("https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
-                                                   params={
-                                                       'apiKey': HERE_API_KEY,
-                                                       'start0': walkA,
-                                                       'destination0': walkB,
-                                                       'mode': 'balanced;pedestrian',
-                                                       'summaryAttributes': 'traveltime,distance'
-                                                   })
-                    json_walking_data = json.loads(walkingResponse.text)
-                    walkingDistance = json_walking_data['response']['matrixEntry'][0]['summary']['distance']
-                    walkingTime = json_walking_data['response']['matrixEntry'][0]['summary']['travelTime']
-                    canWalk = False
-                    if (walkingDistance <= 2000): canWalk = True
-                    return {
-                        'travelDistance': travelDistance,
-                        'travelTime': travelTime,
-                        'walkingDistance': walkingDistance,
-                        'walkingTime': walkingTime,
-                        'canWalk': canWalk
-                    }
-                else:
-                    return None
+                walkingData = self.context['walkingData']
+                return {
+                    'travelDistance': travelData[0][index],
+                    'travelTime': travelData[1][index],
+                    'walkingDistance': walkingData[0][index],
+                    'walkingTime': walkingData[1][index],
+                    'canWalk': walkingData[0][index] < 2000
+                }
             except Exception:
                 return None
         except Exception:

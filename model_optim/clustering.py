@@ -4,6 +4,7 @@ from sklearn.cluster import DBSCAN
 import numpy as np
 import matplotlib.pyplot as plt
 
+from model_optim.affectation import getRecomendedParkings
 from model_optim.assignement import assignToCluster
 from model_optim.helpers.calculateDistance import calculateDistance
 from model_optim.optimization import optimize
@@ -52,4 +53,5 @@ def getParkingClusters():
 
 # getParkingClusters()
 #assignToCluster(1)
-optimize(1)
+#optimize(1)
+getRecomendedParkings(1)

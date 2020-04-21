@@ -1,10 +1,11 @@
 import hashlib
 import io
 import json
-
+import numpy as np
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+import pandas as pd
 import qrcode
 import requests
 from django.contrib.auth import get_user_model
@@ -23,6 +24,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rolepermissions.checkers import has_role
 
+from model_optim.affectation import getRecomendedParkings
+from model_optim.helpers.calculateDistance import calculateRouteInfo
+from model_optim.helpers.matrixFormat import Object, splitParkings
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver, Agent
 from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment
@@ -52,6 +56,30 @@ class ParkingView(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
+            queryParkings = getRecomendedParkings(request.query_params['automobiliste'])
+
+            try:
+                start = request.query_params['start']
+            except Exception:
+                start = None
+            try:
+                destination = request.query_params['destination']
+            except Exception:
+                destination = None
+
+            (travelData, walkingData) = calculateRouteInfo(queryParkings, start, destination)
+
+            parkings = ParkingSerializer(queryParkings, many=True, context={
+                'request': request, 'walkingData': walkingData,
+                'travelData': travelData}).data
+            res = parkings
+
+
+        except Parking.DoesNotExist:
+            raise Http404
+
+
+        try:
             minDistance = request.query_params['minDistance']
         except Exception:
             minDistance = 0
@@ -73,20 +101,14 @@ class ParkingView(viewsets.ModelViewSet):
             equipements_id = []
         print(minDistance,maxDistance, minPrice, maxPrice,equipements_id)
         if(minDistance != 0 or maxDistance!=1000000000 and minPrice!=0 or maxPrice!=0 or equipements_id!=[]):
-            try:
-                parkings = ParkingSerializer(Parking.objects.all(), many=True, context={'request': request}).data
-                res = filter(lambda parking: self.applyFilter(parking, {
-                    'minDistance': int(minDistance),
-                    'maxDistance': int(maxDistance),
-                    'minPrice': int(minPrice),
-                    'maxPrice': int(maxPrice),
-                    'equipements_id': equipements_id
-                }), parkings)
-            except Parking.DoesNotExist:
-                raise Http404
-            return Response(res)
-        else:
-            return super().list(request,*args, **kwargs)
+            res = filter(lambda parking: self.applyFilter(parking, {
+                'minDistance': int(minDistance),
+                'maxDistance': int(maxDistance),
+                'minPrice': int(minPrice),
+                'maxPrice': int(maxPrice),
+                'equipements_id': equipements_id
+            }), parkings)
+        return Response(res)
 
 
 

@@ -1,3 +1,6 @@
+class Object(object):
+    pass
+
 def splitUsers(users):  #here api support max start 15
     k, modK = divmod(len(users), 15)
     uSplits = []
