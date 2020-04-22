@@ -276,7 +276,22 @@ class FavorisView(viewsets.ModelViewSet):
         try:
             idAutomobiliste = request.query_params['automobiliste']
             query = Automobiliste.objects.get(id=idAutomobiliste)
-            data = FavorisSerializer(query).data
+            fav_ids = list(query.favoris_id)
+            print(fav_ids)
+            queryParkings = Parking.objects.filter(id__in=fav_ids)
+            try:
+                start = request.query_params['start']
+            except Exception:
+                start = None
+            try:
+                destination = request.query_params['destination']
+            except Exception:
+                destination = None
+
+            (travelData, walkingData) = calculateRouteInfo(queryParkings, start, destination)
+            data = FavorisSerializer(query, context={
+                'request': request, 'walkingData': walkingData,
+                'travelData': travelData}).data
             return Response(data)
         except Http404:
             return Response({

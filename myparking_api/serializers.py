@@ -301,6 +301,14 @@ class FavorisSerializer(serializers.ModelSerializer):
         model = Automobiliste
         fields = ['idAutomobiliste', 'favoris', 'favoris_id']
 
+    def to_representation(self, instance):
+        fav_ids = instance.favoris_id
+        parkings = ParkingSerializer(Parking.objects.filter(id__in=fav_ids),many=True,context=self.context).data
+        return {
+            'idAutomobiliste': instance.idAutomobiliste,
+            'favoris': parkings
+        }
+
     def create(self, validated_data):
         request = self.context['request']
         favoris_id = validated_data.pop('favoris_id')
