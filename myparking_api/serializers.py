@@ -16,6 +16,7 @@ from rest_framework import serializers
 from rest_framework.generics import get_object_or_404
 from rolepermissions.roles import assign_role
 
+from model_optim.persistance import setReservation
 from myparking import roles
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
@@ -438,7 +439,10 @@ class ReservationSerializer(serializers.ModelSerializer):
                                   dateEntreeEffective=dateEntree,
                                   dateSortieEffective=dateSortie,
                                   **validated_data)
+
         reservation.save()
+        # Set this reservation in it's cluster
+        setReservation(validated_data['automobiliste_id'],reservation)
         return reservation
 
     def update(self, instance, validated_data):

@@ -2,7 +2,7 @@
     Parking disponibility, state of clusters, users assignments
 """
 from model_optim.helpers.calculateCentroid import get_centermost_point
-from myparking_api.models import Cluster, Porposition
+from myparking_api.models import Cluster, Porposition, Reservation
 import numpy as np
 
 
@@ -22,6 +22,12 @@ def saveParkingsClusters(clusters):
 def saveUserAssignmentToCluster(idAutomobiliste, idCluster):
     cluster = Cluster.objects.get(id=idCluster)
     cluster.drivers_id.add(idAutomobiliste)
+    reservations = Reservation.objects.filter(automobiliste_id=idAutomobiliste).values_list()
+    reservations_array = np.asarray(reservations)
+    reservations_ids = reservations_array[:,0]
+    print(reservations_ids,"iiiiids reser")
+    for id in reservations_ids:
+        cluster.reservations_id.add(id)
     cluster.save()
 
 def saveAffectations(dataframe, users, affectations, idCluster):
@@ -38,8 +44,28 @@ def saveAffectations(dataframe, users, affectations, idCluster):
     cluster.save()
 
 
-""" COMPLETE THIS LATER TO ADD RESERVATION CONTRAINT IN MODEL"""
-def getReservations(dataframe,users,idCluster):
-    return []
+def setReservation(idAutomobiliste, reservation):
+    cluster = Cluster.objects.get(drivers=idAutomobiliste)
+    cluster.reservations_id.add(reservation.id)
+    cluster.save()
+    pass
+
+
+def getReservations(dataframe, users, idCluster):
+    cluster = Cluster.objects.get(id=idCluster)
+    ids = list(cluster.reservations_id)
+    print(ids, "res idsss")
+    reservations = Reservation.objects.filter(id__in=ids).values_list()
+    reservations_array = np.asarray(reservations)
+    RESERV = []
+    for res in reservations_array:
+        i = dataframe.loc[dataframe['ID'] == res[12]].index[0]
+        j = users.loc[users['idAutomobiliste'] == res[13]].index[0]
+        print(i,j, 'ij indexex parking user for reserv')
+        RESERV.append({
+            'i': i,
+            'j': j
+        })
+    return RESERV
 
 

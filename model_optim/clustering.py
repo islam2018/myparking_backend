@@ -52,6 +52,6 @@ def getParkingClusters():
 
 
 #getParkingClusters()
-#assignToCluster(2)
-#optimize(2)
-getRecomendedParkings(2)
+#assignToCluster(1)
+optimize(2)
+#getRecomendedParkings(2)
