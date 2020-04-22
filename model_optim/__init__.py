@@ -1,0 +1,1 @@
+from myparking.wsgi import *

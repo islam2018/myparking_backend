@@ -399,12 +399,13 @@ class ReservationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reservation
         fields = ['idReservation', 'hashId', 'codeReservation', 'qrUrl', 'state', 'etageAttribue', 'placeAttribue',
-                  'dateEntreePrevue', 'dateSortiePrevue', 'dateEntreeEffective', 'dateSortieEffective',
+                  'dateReservation', 'dateEntreePrevue', 'dateSortiePrevue', 'dateEntreeEffective', 'dateSortieEffective',
                   'parking', 'automobiliste', 'paiment', 'paiementInstance', 'paiment_id',
                   'parking_id', 'automobiliste_id']
         extra_kwargs = {'hashId': {'read_only': True},
                         'qrUrl': {'read_only': True},
                         'codeReservation': {'read_only': True},
+                        'dateReservation': {'read_only': True},
                         'dateEntreePrevue': {'required': False},
                         'dateSortiePrevue': {'required': False}}
 

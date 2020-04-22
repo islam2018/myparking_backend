@@ -27,7 +27,7 @@ def optimize(idAutomobiliste):
     global NU
     query = Cluster.objects.filter(drivers=idAutomobiliste).values_list()
     cluster = pd.DataFrame.from_records(query,
-                                          columns=['idCluster', 'label', 'centroid', 'parkings', 'drivers',
+                                          columns=['idCluster', 'label', 'centroid','reservations', 'parkings', 'drivers',
                                                    'propositions']).iloc[0]
 
     parkings_id = list(cluster['parkings'])

@@ -10,7 +10,7 @@ import numpy as np
 def assignToCluster(idAutomobiliste):
     clusters = Cluster.objects.all().values_list()
     dataframe = pd.DataFrame.from_records(clusters,
-                                          columns=['idCluster', 'label', 'centroid', 'parkings', 'drivers', 'propositions'])
+                                          columns=['idCluster', 'label', 'centroid','reservations', 'parkings', 'drivers', 'propositions'])
     centers = np.asarray(dataframe[['centroid']])
     print(centers)
 

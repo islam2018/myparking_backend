@@ -51,7 +51,7 @@ def getParkingClusters():
     return (cluster_labels, clusters,crd)
 
 
-# getParkingClusters()
-#assignToCluster(1)
-#optimize(1)
-getRecomendedParkings(1)
+#getParkingClusters()
+#assignToCluster(2)
+#optimize(2)
+getRecomendedParkings(2)
