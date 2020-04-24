@@ -1,8 +1,13 @@
 """ Save and update database :
     Parking disponibility, state of clusters, users assignments
 """
+import random
+
+import pandas as pd
+from django.db import transaction
+
 from model_optim.helpers.calculateCentroid import get_centermost_point
-from myparking_api.models import Cluster, Porposition, Reservation
+from myparking_api.models import Cluster, Porposition, Reservation, Parking
 import numpy as np
 
 
@@ -14,7 +19,8 @@ def saveParkingsClusters(clusters):
         cluster = Cluster(label=label)
         cluster.parkings_id = c['ID'].to_list()
         center = list(get_centermost_point(c[['LAT', 'LON']].to_numpy()))
-        print(center, "center")
+        print("center")
+        print(center)
         cluster.centroid = center
         cluster.save()
         label = label+1
@@ -24,10 +30,12 @@ def saveUserAssignmentToCluster(idAutomobiliste, idCluster):
     cluster.drivers_id.add(idAutomobiliste)
     reservations = Reservation.objects.filter(automobiliste_id=idAutomobiliste).values_list()
     reservations_array = np.asarray(reservations)
-    reservations_ids = reservations_array[:,0]
-    print(reservations_ids,"iiiiids reser")
-    for id in reservations_ids:
-        cluster.reservations_id.add(id)
+    if (reservations_array.__len__()>0):
+        reservations_ids = reservations_array[:,0]
+        print(reservations_ids,"iiiiids reser")
+        for id in reservations_ids:
+            print(id)
+            cluster.reservations_id.add(id)
     cluster.save()
 
 def saveAffectations(dataframe, users, affectations, idCluster):
@@ -69,3 +77,32 @@ def getReservations(dataframe, users, idCluster):
     return RESERV
 
 
+"""FOR SIMULATION PURPOSES"""
+
+def changeParkingDispo():
+    with transaction.atomic():
+        nbParkings = Parking.objects.count()
+        queryset = Parking.objects.all().values_list()
+        dataframe = pd.DataFrame.from_records(queryset,
+                                              columns=['ID', 'NB_ETAGE', 'NB_PLACES', 'NB_PLACES_LIBRES', '4', '5', '6',
+                                                       'LAT', 'LON', '9', '10', '11', '12', '13', '14'])
+        ids = dataframe[['ID']]
+        nbPlacesLibres =  dataframe[['NB_PLACES_LIBRES']]
+        print(nbParkings)
+
+        randomCount = random.randrange(1,100)
+        print('randomCount',randomCount)
+
+        for i in range(randomCount):
+            randomStep = random.randrange(-10, 10)
+            randomIndex = random.randrange(0,nbParkings-1)
+            id = ids.iloc[randomIndex]['ID']
+
+            libre = nbPlacesLibres.iloc[randomIndex]['NB_PLACES_LIBRES']
+
+            newLibre = libre + randomStep
+            if (newLibre <=0): newLibre = 1
+
+            park = Parking.objects.get(id=id)
+            park.nbPlacesLibres = newLibre
+            park.save()

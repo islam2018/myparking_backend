@@ -22,10 +22,10 @@ def F(dataframe, D, i, j ):
     return val**2
 
 
-def optimize(idAutomobiliste):
+def optimize(idCluster):
     global NP
     global NU
-    query = Cluster.objects.filter(drivers=idAutomobiliste).values_list()
+    query = Cluster.objects.filter(id=idCluster).values_list()
     cluster = pd.DataFrame.from_records(query,
                                           columns=['idCluster', 'label', 'centroid','reservations', 'parkings', 'drivers',
                                                    'propositions']).iloc[0]

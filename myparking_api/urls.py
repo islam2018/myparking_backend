@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.urls import include, path
+
+from model_optim import AFTER_SERVER_INIT
 from . import views
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -30,3 +32,5 @@ urlpatterns = [
     path('favoris', views.FavorisView.as_view({'delete': 'delete'}))
 ]
 
+# Run the model after server is loaded
+AFTER_SERVER_INIT()

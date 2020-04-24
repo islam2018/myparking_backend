@@ -1,15 +1,15 @@
 import seaborn as sns
 import pandas as pd
+from django.db import transaction
 from sklearn.cluster import DBSCAN
 import numpy as np
 import matplotlib.pyplot as plt
 
-from model_optim.affectation import getRecomendedParkings
-from model_optim.assignement import assignToCluster
+from model_optim.assignement import assignToClusters
 from model_optim.helpers.calculateDistance import calculateDistance
 from model_optim.optimization import optimize
 from model_optim.persistance import saveParkingsClusters
-from myparking_api.models import Parking, Automobiliste
+from myparking_api.models import Parking, Automobiliste, Cluster
 
 """ Generate clusters of parkings : 
     using DBSCAN to cluster parkings in database
@@ -46,12 +46,22 @@ def getParkingClusters():
 
     plt.show()
 
-    saveParkingsClusters(clusters)
+    saveParkingsClusters(clusters)  # Save into database
 
     return (cluster_labels, clusters,crd)
 
 
 #getParkingClusters()
 #assignToCluster(1)
-optimize(2)
+#optimize(2)
 #getRecomendedParkings(2)
+
+# with transaction.atomic():
+#     getParkingClusters()  # Clusetring and save into database
+#     assignToClusters()  # Assign users to clusters and save into database
+#     clusters = Cluster.objects.all().values_list()
+#     dataframe = pd.DataFrame.from_records(clusters,
+#                                           columns=['idCluster', 'label', 'centroid', 'reservations', 'parkings',
+#                                                    'drivers', 'propositions'])
+#     for cluster in dataframe.iloc:  # Run optimization on each cluster
+#         optimize(cluster['idCluster'])
