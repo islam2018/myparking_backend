@@ -338,10 +338,12 @@ class FavorisSerializer(serializers.ModelSerializer):
 
 
 class AgentProfileSerializer(serializers.ModelSerializer):
+    parking = ParkingSerializer(read_only=True)
+    parkingId = serializers.IntegerField(write_only=True)
     class Meta:
         model = Agent
-        fields = ['idAgent', 'nom', 'prenom', 'parking']
-
+        fields = ['idAgent', 'nom', 'prenom', 'parkingId', 'parking']
+        extra_kwargs = {'idAgent': {'read_only': True}}
 
 class AgentSerializer(serializers.HyperlinkedModelSerializer):
     agentProfile = AgentProfileSerializer(required=True)
@@ -358,7 +360,9 @@ class AgentSerializer(serializers.HyperlinkedModelSerializer):
         user.set_password(password)
         user.save()
         assign_role(user, roles.Agent)
+        id_parking = profile_data.pop('parkingId')
         agent = Agent(auth=user, **profile_data)
+        agent.parking_id = id_parking
         agent.save()
         return user
 
@@ -372,7 +376,7 @@ class AgentSerializer(serializers.HyperlinkedModelSerializer):
         profile.idAutomobiliste = profile_data.get('idAgent', profile.idAutomobiliste)
         profile.nom = profile_data.get('nom', profile.nom)
         profile.prenom = profile_data.get('prenom', profile.prenom)
-        profile.parking = profile_data.get('parking', profile.parking)
+        profile.parking_id = profile_data.get('parking_id', profile.parking)
         profile.save()
 
         return instance
@@ -434,6 +438,7 @@ class ReservationSerializer(serializers.ModelSerializer):
                                   hashId=hashed,
                                   qrUrl = qrUrl,
                                   codeReservation=code,
+                                  dateReservation=timezone.now(),
                                   dateEntreePrevue=dateEntree,
                                   dateSortiePrevue=dateSortie,
                                   dateEntreeEffective=dateEntree,

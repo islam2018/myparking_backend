@@ -29,7 +29,9 @@ urlpatterns = [
     path('api/agent/login', AgentLoginViewJWT.as_view()),
     path('api/admin/login', AdminLoginViewJWT.as_view()),
     path('api/token/refresh', TokenRefreshView.as_view()),
-    path('favoris', views.FavorisView.as_view({'delete': 'delete'}))
+    path('reservation/qr/<code>', views.ReservationView.as_view({'get': 'checkQR'})),
+    path('favoris', views.FavorisView.as_view({'delete': 'delete'})),
+    path('agent/<id>', views.AgentView.as_view())
 ]
 
 # Run the model after server is loaded

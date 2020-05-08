@@ -127,7 +127,7 @@ class Agent(models.Model):
     nom = models.TextField(default='')
     prenom = models.TextField(default='')
     auth = models.OneToOneField(to=User, on_delete=models.CASCADE, default=None, related_name='agentProfile')
-    parking = models.TextField()
+    parking = models.ForeignKey(to=Parking,on_delete=models.CASCADE)
     objects = DjongoManager()
 
     @property
@@ -152,7 +152,7 @@ class Reservation(models.Model):
     state = models.TextField(default='En cours')
     etageAttribue = models.IntegerField(default=1)
     placeAttribue= models.IntegerField(default=1)
-    dateReservation = models.DateTimeField()
+    dateReservation = models.DateTimeField(default=datetime.today())
     dateEntreePrevue = models.DateTimeField(default=datetime.today())
     dateSortiePrevue = models.DateTimeField(default=datetime.today())
     dateEntreeEffective = models.DateTimeField(default=datetime.today())

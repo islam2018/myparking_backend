@@ -7,6 +7,7 @@ import cloudinary.uploader
 import cloudinary.api
 import pandas as pd
 import qrcode
+from datetime import datetime as dt, timedelta
 import requests
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
@@ -27,11 +28,12 @@ from rolepermissions.checkers import has_role
 from model_optim.affectation import getRecomendedParkings
 from model_optim.helpers.calculateDistance import calculateRouteInfo
 from model_optim.helpers.matrixFormat import Object, splitParkings
+from myparking import roles
 from myparking.HERE_API_KEY import HERE_API_KEY
-from myparking.roles import Driver, Agent
-from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment
+from myparking.roles import Driver
+from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment, Agent
 from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
-    EquipementSerializer, ReservationSerializer, FavorisSerializer, PaimentSerializer
+    EquipementSerializer, ReservationSerializer, FavorisSerializer, PaimentSerializer, AgentProfileSerializer
 
 
 class EquipementView(viewsets.ModelViewSet):
@@ -251,6 +253,20 @@ class ReservationView(viewsets.ModelViewSet):
             print("catched exception")
             return super().list(request, *args, **kwargs)
 
+    def checkQR(self,request, code):
+        try:
+            reservation = Reservation.objects.get(hashId=code)
+            data = ReservationSerializer(reservation, many=False).data
+            return Response(data)
+        except Http404:
+            return Response({
+                'detail': 'Reservation non trouvée'
+            }, status.HTTP_404_NOT_FOUND)
+        except Exception:
+            return Response({
+                'detail': 'Internal server error'
+            }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 class RegistrationAutomobilisteView(viewsets.ModelViewSet):
@@ -371,7 +387,7 @@ class AgentLoginViewJWT(TokenObtainPairView):
 
         if response.status_code == status.HTTP_200_OK:
             user = get_user_model().objects.get(username=request.data[get_user_model().USERNAME_FIELD])
-            if ((not has_role(user, IsAdminUser)) and has_role(user,Agent)):
+            if ((not has_role(user, IsAdminUser)) and has_role(user,roles.Agent)):
                 serialized_user = self.user_serializer_class(user)
                 response.data.update(serialized_user.data)
             else:
@@ -427,3 +443,33 @@ class SearchView(APIView):
             return Response({
                 "detail": "Request error"
             }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class AgentView(APIView):
+    # permission_classes = [IsDriver]
+    def get(self, request, id):
+        agent = Agent.objects.get(id=id)
+        agent_data = AgentProfileSerializer(agent, many=False).data
+        id_parking = agent.parking_id
+        parking = Parking.objects.get(id=id_parking)
+        date = dt.strptime(request.query_params['date'], '%d-%m-%Y')
+        end_date = date + timedelta(days=1)
+        print(date, end_date)
+        nbReservations = Reservation.objects.filter(parking_id=id_parking,dateReservation__range=(date,end_date)).count()
+
+        return Response(
+            {
+                'date': date,
+                'idParking': id_parking,
+                'nbReservations': nbReservations,
+                'nbPlaces': parking.nbPlaces,
+                'nbPlacesLibres': parking.nbPlacesLibres,
+                'nbPlacesOccupes': parking.nbPlaces - parking.nbPlacesLibres,
+            }
+        )
+
+
+
+
+
+
+
