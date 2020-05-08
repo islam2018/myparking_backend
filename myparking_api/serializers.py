@@ -3,7 +3,7 @@ import json
 from datetime import datetime, time
 import hashlib
 import random
-
+from django.utils import timezone
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
