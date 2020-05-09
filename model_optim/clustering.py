@@ -44,7 +44,7 @@ def getParkingClusters():
 
     plt.scatter(crd[:, 0], crd[:, 1], c=c_colors, **plot_kwds)
 
-    plt.show()
+    #plt.show()
 
     saveParkingsClusters(clusters)  # Save into database
 

@@ -66,10 +66,13 @@ def getReservations(dataframe, users, idCluster):
     reservations = Reservation.objects.filter(id__in=ids).values_list()
     reservations_array = np.asarray(reservations)
     RESERV = []
+    print(dataframe)
+    print(users)
     for res in reservations_array:
         i = dataframe.loc[dataframe['ID'] == res[12]].index[0]
         j = users.loc[users['idAutomobiliste'] == res[13]].index[0]
         print(i,j, 'ij indexex parking user for reserv')
+
         RESERV.append({
             'i': i,
             'j': j

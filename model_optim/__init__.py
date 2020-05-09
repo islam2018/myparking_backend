@@ -26,7 +26,7 @@ def AFTER_SERVER_INIT():
 
 
     scheduler = BackgroundScheduler()
-    scheduler.add_job(runModel, 'interval', minutes =5)
+    scheduler.add_job(runModel, 'interval', minutes =1)
     """For simulation purposes """
     #scheduler.add_job(changeParkingDispo, 'interval', minutes=1)
     """"""

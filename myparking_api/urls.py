@@ -34,5 +34,6 @@ urlpatterns = [
     path('agent/<id>', views.AgentView.as_view())
 ]
 
-# Run the model after server is loaded
+# Run the model after server is
+
 AFTER_SERVER_INIT()
