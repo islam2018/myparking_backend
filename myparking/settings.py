@@ -140,3 +140,42 @@ REST_FRAMEWORK = {
 
 ROLEPERMISSIONS_MODULE = 'myparking.roles'
 django_heroku.settings(locals())
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            # 'formatter': 'simple',
+            'filename': 'myparking_api/logs/database_logs.log',
+        },
+        'mail_admins': {
+            'level': 'INFO',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'formatter': 'simple'
+        }
+    },
+    'loggers': {
+        'django.db.backends': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': False
+        },
+    },
+}
