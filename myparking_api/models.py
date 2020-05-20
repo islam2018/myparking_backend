@@ -1,4 +1,5 @@
 from datetime import time, datetime
+from enum import Enum
 
 from django.contrib.auth.models import User
 from djongo import models
@@ -201,3 +202,8 @@ class Cluster(models.Model):
     @property
     def idCluster(self):
         return self.id
+
+class ETAT_RESERVATION(Enum):
+     EN_COURS = "En cours"
+     VALIDEE = "Validée"
+     REFUSEE = "Refusée"

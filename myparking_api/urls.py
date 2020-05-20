@@ -30,6 +30,9 @@ urlpatterns = [
     path('api/admin/login', AdminLoginViewJWT.as_view()),
     path('api/token/refresh', TokenRefreshView.as_view()),
     path('reservation/qr/<code>', views.ReservationView.as_view({'get': 'checkQR'})),
+    path('reservation/history', views.ReservationView.as_view({'get': 'history'})),
+    path('reservation/validate/<id>', views.ReservationView.as_view({'post': 'validateQR'})),
+    path('reservation/decline/<id>', views.ReservationView.as_view({'post': 'declineQR'})),
     path('favoris', views.FavorisView.as_view({'delete': 'delete'})),
     path('agent/<id>', views.AgentView.as_view())
 ]

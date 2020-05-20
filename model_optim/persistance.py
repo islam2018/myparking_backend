@@ -13,9 +13,24 @@ import numpy as np
 
 def saveParkingsClusters(clusters):
     #delete all old clusters first
+    old_clusters = Cluster.objects.all().values_list()
+    for old in old_clusters:
+        print(old)
+        id_props = list(old[6]) #for propisitons
+        print('old cluster', old, id_props)
+        print(id_props)
+        try:
+            instances = Porposition.objects.filter(id__in=id_props)
+            print("OLD P",instances.values_list())
+            instances.delete()
+        except Exception:
+            print("NO OLD PROPOSITIONS FOUND")
+            pass
     Cluster.objects.all().delete()
+
     label = 0
     for c in clusters:
+
         cluster = Cluster(label=label)
         cluster.parkings_id = c['ID'].to_list()
         center = list(get_centermost_point(c[['LAT', 'LON']].to_numpy()))
@@ -69,10 +84,13 @@ def getReservations(dataframe, users, idCluster):
     print(dataframe)
     print(users)
     for res in reservations_array:
-        i = dataframe.loc[dataframe['ID'] == res[12]].index[0]
-        j = users.loc[users['idAutomobiliste'] == res[13]].index[0]
-        print(i,j, 'ij indexex parking user for reserv')
-
+        try:
+            i = dataframe.loc[dataframe['ID'] == res[12]].index[0]
+            j = users.loc[users['idAutomobiliste'] == res[13]].index[0]
+            print(i,j, 'ij indexex parking user for reserv')
+        except Exception:
+            print("GET RESERVATION FOR MODEL ERRORR")
+            pass
         RESERV.append({
             'i': i,
             'j': j

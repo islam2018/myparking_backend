@@ -1,3 +1,5 @@
+import base64
+import binascii
 import hashlib
 import io
 import json
@@ -11,6 +13,7 @@ from datetime import datetime as dt, timedelta
 import requests
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404
@@ -31,7 +34,7 @@ from model_optim.helpers.matrixFormat import Object, splitParkings
 from myparking import roles
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
-from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment, Agent
+from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment, Agent, ETAT_RESERVATION
 from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
     EquipementSerializer, ReservationSerializer, FavorisSerializer, PaimentSerializer, AgentProfileSerializer
 
@@ -232,7 +235,32 @@ class ReservationView(viewsets.ModelViewSet):
         #     return Response({
         #         "detail": "Creating Reservation Transaction Error"
         #     }, status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return super().create(request, *args, **kwargs)
+        # with transaction.atomic():
+        #     return super().create(request, *args, **kwargs)
+
+        with transaction.atomic():
+            response = super().create(request, *args, **kwargs).data
+            content_ = {
+                "0": response['idReservation'],
+                "1": response['dateReservation'],
+                "2": response['dateEntreePrevue'],
+                "3": response['dateSortiePrevue'],
+                "4": response['parking']['nom'],
+                "5": response['automobiliste']['nom']+";"+response['automobiliste']['prenom'],
+            }
+            content = json.dumps(content_, cls=DjangoJSONEncoder)
+            content_bytes = content.encode('ascii')
+            #base64_bytes = base64.b64encode(content_bytes)
+            # content_bytes = content.encode('utf-8')
+            base64_message = binascii.hexlify(content_bytes)
+
+            print(base64_message)
+            print(content)
+            qrUrl = self.serializer_class().generateQR(content)
+            reservation = Reservation.objects.get(id=response['idReservation'])
+            reservation.qrUrl = qrUrl
+            reservation.save()
+            return Response(ReservationSerializer(reservation, many=False).data)
 
     def update(self, request, *args, **kwargs):
         try:
@@ -267,6 +295,42 @@ class ReservationView(viewsets.ModelViewSet):
                 'detail': 'Internal server error'
             }, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def validateQR(self, request,id):
+        reservation = Reservation.objects.get(id=id)
+        reservation.state = ETAT_RESERVATION.VALIDEE.value
+        reservation.save()
+        return Response(ReservationSerializer(reservation,many=False).data)
+
+    def declineQR(self, request,id):
+        reservation = Reservation.objects.get(id=id)
+        reservation.state = ETAT_RESERVATION.REFUSEE.value
+        reservation.save()
+        return Response(ReservationSerializer(reservation, many=False).data)
+
+    def history(self,request):
+        try:
+            id_parking = request.query_params['parking']
+            date = dt.strptime(request.query_params['date'], '%d-%m-%Y')
+            end_date = date + timedelta(days=1)
+            print(date, end_date)
+            nbReservations = Reservation.objects.filter(parking_id=id_parking,
+                                                        dateReservation__range=(date, end_date)).count()
+            nbReservationsValidee = Reservation.objects.filter(parking_id=id_parking,
+                                                        state=ETAT_RESERVATION.VALIDEE.value,
+                                                        dateReservation__range=(date, end_date)).count()
+            nbReservationsRefusee = Reservation.objects.filter(parking_id=id_parking,
+                                                               state=ETAT_RESERVATION.REFUSEE.value,
+                                                               dateReservation__range=(date, end_date)).count()
+            return Response({
+                "date": date,
+                "nbReservationsTotal": nbReservations,
+                "nbReservationsValidee": nbReservationsValidee,
+                "nbReservationsRefusee": nbReservationsRefusee
+            })
+        except Exception:
+            return Response({
+                'detail': 'Internal server error'
+            }, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RegistrationAutomobilisteView(viewsets.ModelViewSet):
