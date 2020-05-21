@@ -9,7 +9,7 @@ import cloudinary.uploader
 import cloudinary.api
 import pandas as pd
 import qrcode
-from datetime import datetime as dt, timedelta
+from datetime import datetime as dt, timedelta, datetime
 import requests
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
@@ -17,6 +17,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
 
 from rest_framework import viewsets, permissions, status, mixins
 from rest_framework.generics import GenericAPIView
@@ -245,7 +246,7 @@ class ReservationView(viewsets.ModelViewSet):
                 "1": response['dateReservation'],
                 "2": response['dateEntreePrevue'],
                 "3": response['dateSortiePrevue'],
-                "4": response['parking']['nom'],
+                "4": response['parking']['idParking'],
                 "5": response['automobiliste']['nom']+";"+response['automobiliste']['prenom'],
             }
             content = json.dumps(content_, cls=DjangoJSONEncoder)
@@ -296,16 +297,48 @@ class ReservationView(viewsets.ModelViewSet):
             }, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def validateQR(self, request,id):
-        reservation = Reservation.objects.get(id=id)
-        reservation.state = ETAT_RESERVATION.VALIDEE.value
-        reservation.save()
-        return Response(ReservationSerializer(reservation,many=False).data)
+        try:
+            reservation = Reservation.objects.get(id=id)
+            if reservation.state == ETAT_RESERVATION.EN_COURS.value:
+                reservation.state = ETAT_RESERVATION.VALIDEE.value
+                reservation.dateEntreeEffective = datetime.now()
+            elif reservation.state == ETAT_RESERVATION.VALIDEE.value:
+                reservation.state = ETAT_RESERVATION.TERMINE.value
+                reservation.dateSortieEffective = datetime.now()
+            elif reservation.state == ETAT_RESERVATION.TERMINE.value:
+                return Response({
+                    "detail": "Réservation déja validé"
+                }, status.HTTP_409_CONFLICT)
+            elif reservation.state == ETAT_RESERVATION.REFUSEE.value:
+                return Response({
+                    "detail": "Réservation déja refusée"
+                }, status.HTTP_409_CONFLICT)
+            reservation.save()
+            return Response(ReservationSerializer(reservation,many=False).data)
+        except Http404:
+            return Response({
+                "detail": "Réservation non trouvée"
+            }, status.HTTP_404_NOT_FOUND)
 
     def declineQR(self, request,id):
-        reservation = Reservation.objects.get(id=id)
-        reservation.state = ETAT_RESERVATION.REFUSEE.value
-        reservation.save()
-        return Response(ReservationSerializer(reservation, many=False).data)
+        try:
+            reservation = Reservation.objects.get(id=id)
+            if reservation.state == ETAT_RESERVATION.EN_COURS.value:
+                reservation.state = ETAT_RESERVATION.REFUSEE.value
+            elif reservation.state == ETAT_RESERVATION.VALIDEE.value or reservation.state == ETAT_RESERVATION.TERMINE.value:
+                return Response({
+                    "detail": "Réservation déja validé"
+                }, status.HTTP_409_CONFLICT)
+            elif reservation.state == ETAT_RESERVATION.REFUSEE.value:
+                return Response({
+                    "detail": "Réservation déja refusée"
+                }, status.HTTP_409_CONFLICT)
+            reservation.save()
+            return Response(ReservationSerializer(reservation, many=False).data)
+        except Http404:
+            return Response({
+                "detail": "Réservation non trouvée"
+            }, status.HTTP_404_NOT_FOUND)
 
     def history(self,request):
         try:
@@ -313,10 +346,11 @@ class ReservationView(viewsets.ModelViewSet):
             date = dt.strptime(request.query_params['date'], '%d-%m-%Y')
             end_date = date + timedelta(days=1)
             print(date, end_date)
+            valideStates = [ETAT_RESERVATION.VALIDEE.value, ETAT_RESERVATION.TERMINE.value]
             nbReservations = Reservation.objects.filter(parking_id=id_parking,
                                                         dateReservation__range=(date, end_date)).count()
             nbReservationsValidee = Reservation.objects.filter(parking_id=id_parking,
-                                                        state=ETAT_RESERVATION.VALIDEE.value,
+                                                        state__in=valideStates,
                                                         dateReservation__range=(date, end_date)).count()
             nbReservationsRefusee = Reservation.objects.filter(parking_id=id_parking,
                                                                state=ETAT_RESERVATION.REFUSEE.value,

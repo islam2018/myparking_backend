@@ -206,4 +206,5 @@ class Cluster(models.Model):
 class ETAT_RESERVATION(Enum):
      EN_COURS = "En cours"
      VALIDEE = "Validée"
+     TERMINE = "Terminée"
      REFUSEE = "Refusée"
