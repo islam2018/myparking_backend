@@ -32,13 +32,13 @@ from rolepermissions.checkers import has_role
 from model_optim.affectation import getRecomendedParkings
 from model_optim.helpers.calculateDistance import calculateRouteInfo
 from model_optim.helpers.matrixFormat import Object, splitParkings
-from myparking import roles
+from myparking import roles, beams_client
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
 from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment, Agent, ETAT_RESERVATION
 from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
     EquipementSerializer, ReservationSerializer, FavorisSerializer, PaimentSerializer, AgentProfileSerializer
-
+from pusher_push_notifications import PushNotifications
 
 class EquipementView(viewsets.ModelViewSet):
     queryset = Equipement.objects.all()
@@ -566,8 +566,101 @@ class AgentView(APIView):
         )
 
 
+class BeamsAgentAuth(APIView):
+    def get(self, request):
+        id = request.query_params['user_id']
+        beams_token = beams_client.generate_token("agent"+id)
+        return Response(beams_token)
+class BeamsDriverAuth(APIView):
+    def get(self, request):
+        id = request.query_params['user_id']
+        beams_token = beams_client.generate_token("driver"+id)
+        return Response(beams_token)
 
+class SendNotif(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def post(self,request):
+        content = request.data['content']
+        user_id = request.data['user_id']
+        to = request.data['destination']
+        response = beams_client.publish_to_users(
+            user_ids=[to+user_id],
+            publish_body={
+                'apns': {
+                    'aps': {
+                        'alert': 'Hello!',
+                    },
+                },
+                'fcm': {
+                    'notification': {
+                        'title': 'Hello',
+                        'body': 'Hello, world!',
+                    },
+                    'data': {
+                        'content': content
+                    }
+                },
 
+            }
+        )
+        return Response(response)
 
+class SendNotif(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def post(self,request):
+        content = request.data['content']
+        user_id = request.data['user_id']
+        to = request.data['destination']
+        response = beams_client.publish_to_users(
+            user_ids=[to+user_id],
+            publish_body={
+                'apns': {
+                    'aps': {
+                        'alert': 'Hello!',
+                    },
+                },
+                'fcm': {
+                    'notification': {
+                        'title': 'Hello',
+                        'body': 'Hello, world!',
+                    },
+                    'data': {
+                        'content': content
+                    }
+                },
+
+            }
+        )
+        return Response(response)
+
+class Broadcast(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def post(self,request):
+        content = request.data['content']
+        interest = request.data['interest']
+        response = beams_client.publish_to_interests(
+            interests=[interest],
+            publish_body={
+                'apns': {
+                    'aps': {
+                        'alert': 'Hello!',
+                    },
+                },
+                'fcm': {
+                    'notification': {
+                        'title': 'Hello',
+                        'body': 'Hello, world!',
+                    },
+                    'data': {
+                        'content': content
+                    }
+                },
+
+            }
+        )
+        return Response(response)
 
 

@@ -34,7 +34,11 @@ urlpatterns = [
     path('reservation/validate/<id>', views.ReservationView.as_view({'post': 'validateQR'})),
     path('reservation/decline/<id>', views.ReservationView.as_view({'post': 'declineQR'})),
     path('favoris', views.FavorisView.as_view({'delete': 'delete'})),
-    path('agent/<id>', views.AgentView.as_view())
+    path('agent/<id>', views.AgentView.as_view()),
+    path('pusher/beams_auth/agent', views.BeamsAgentAuth.as_view()),
+    path('pusher/beams_auth/driver', views.BeamsDriverAuth.as_view()),
+    path('pusher/notify', views.SendNotif.as_view()),
+    path('pusher/broadcast', views.Broadcast.as_view()),
 ]
 
 # Run the model after server is
