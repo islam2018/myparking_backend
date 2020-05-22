@@ -25,10 +25,12 @@ joblib==0.14.1
 kiwisolver==1.2.0
 matplotlib==3.2.1
 mip==1.8.1
+mod-wsgi==4.7.1
 numpy==1.18.2
 pandas==1.0.3
 Pillow==7.0.0
 psycopg2==2.8.4
+pusher-push-notifications==2.0.0
 pycparser==2.20
 PyJWT==1.7.1
 pymongo==3.10.1
