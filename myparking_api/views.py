@@ -610,6 +610,8 @@ class SendNotif(APIView):
     permission_classes = []
     authentication_classes = []
     def post(self,request):
+        title = request.data['title']
+        message = request.data['body']
         content = request.data['content']
         user_id = request.data['user_id']
         to = request.data['destination']
@@ -623,8 +625,8 @@ class SendNotif(APIView):
                 },
                 'fcm': {
                     'notification': {
-                        'title': 'Hello',
-                        'body': 'Hello, world!',
+                        'title': title,
+                        'body': message,
                     },
                     'data': {
                         'content': content
@@ -639,6 +641,8 @@ class Broadcast(APIView):
     permission_classes = []
     authentication_classes = []
     def post(self,request):
+        title = request.data['title']
+        message = request.data['body']
         content = request.data['content']
         interest = request.data['interest']
         response = beams_client.publish_to_interests(
@@ -651,8 +655,8 @@ class Broadcast(APIView):
                 },
                 'fcm': {
                     'notification': {
-                        'title': 'Hello',
-                        'body': 'Hello, world!',
+                        'title': title,
+                        'body': message
                     },
                     'data': {
                         'content': content
