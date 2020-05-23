@@ -577,34 +577,7 @@ class BeamsDriverAuth(APIView):
         beams_token = beams_client.generate_token("driver"+id)
         return Response(beams_token)
 
-class SendNotif(APIView):
-    permission_classes = []
-    authentication_classes = []
-    def post(self,request):
-        content = request.data['content']
-        user_id = request.data['user_id']
-        to = request.data['destination']
-        response = beams_client.publish_to_users(
-            user_ids=[to+user_id],
-            publish_body={
-                'apns': {
-                    'aps': {
-                        'alert': 'Hello!',
-                    },
-                },
-                'fcm': {
-                    'notification': {
-                        'title': 'Hello',
-                        'body': 'Hello, world!',
-                    },
-                    'data': {
-                        'content': content
-                    }
-                },
 
-            }
-        )
-        return Response(response)
 
 class SendNotif(APIView):
     permission_classes = []
@@ -615,20 +588,19 @@ class SendNotif(APIView):
         content = request.data['content']
         user_id = request.data['user_id']
         to = request.data['destination']
+        aav= "agent"+user_id
         response = beams_client.publish_to_users(
-            user_ids=[to+user_id],
+            user_ids=[aav],
             publish_body={
-                'apns': {
-                    'aps': {
-                        'alert': 'Hello!',
-                    },
-                },
+
                 'fcm': {
                     'notification': {
                         'title': title,
                         'body': message,
                     },
                     'data': {
+                        'title': title,
+                        'body': message,
                         'content': content
                     }
                 },
@@ -648,17 +620,15 @@ class Broadcast(APIView):
         response = beams_client.publish_to_interests(
             interests=[interest],
             publish_body={
-                'apns': {
-                    'aps': {
-                        'alert': 'Hello!',
-                    },
-                },
+
                 'fcm': {
                     'notification': {
                         'title': title,
                         'body': message
                     },
                     'data': {
+                        'title': title,
+                        'body': message,
                         'content': content
                     }
                 },
