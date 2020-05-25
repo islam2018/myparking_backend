@@ -621,7 +621,7 @@ class Broadcast(APIView):
             interests=[interest],
             publish_body={
 
-                # 'fcm': {
+                'fcm': {
                 #     'notification': {
                 #         'title': title,
                 #         'body': message
