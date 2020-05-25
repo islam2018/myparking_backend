@@ -588,16 +588,16 @@ class SendNotif(APIView):
         content = request.data['content']
         user_id = request.data['user_id']
         to = request.data['destination']
-        aav= "agent"+user_id
+        aav= "agent"+user_id  ## fix this LATER
         response = beams_client.publish_to_users(
             user_ids=[aav],
             publish_body={
 
                 'fcm': {
-                    'notification': {
-                        'title': title,
-                        'body': message,
-                    },
+                    # 'notification': {
+                    #     'title': title,
+                    #     'body': message,
+                    # },
                     'data': {
                         'title': title,
                         'body': message,
@@ -621,11 +621,11 @@ class Broadcast(APIView):
             interests=[interest],
             publish_body={
 
-                'fcm': {
-                    'notification': {
-                        'title': title,
-                        'body': message
-                    },
+                # 'fcm': {
+                #     'notification': {
+                #         'title': title,
+                #         'body': message
+                #     },
                     'data': {
                         'title': title,
                         'body': message,
