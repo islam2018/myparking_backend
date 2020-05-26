@@ -35,9 +35,11 @@ from model_optim.helpers.matrixFormat import Object, splitParkings
 from myparking import roles, beams_client
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
-from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment, Agent, ETAT_RESERVATION
+from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment, Agent, ETAT_RESERVATION, \
+    Signalement
 from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
-    EquipementSerializer, ReservationSerializer, FavorisSerializer, PaimentSerializer, AgentProfileSerializer
+    EquipementSerializer, ReservationSerializer, FavorisSerializer, PaimentSerializer, AgentProfileSerializer, \
+    SignalementSerializer
 from pusher_push_notifications import PushNotifications
 
 class EquipementView(viewsets.ModelViewSet):
@@ -565,6 +567,27 @@ class AgentView(APIView):
             }
         )
 
+class SignalementView(viewsets.ModelViewSet):
+    permission_classes = []
+    authentication_classes = []
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        date_debut = datetime.strptime(data["date_debut"], '%d-%m-%Y %H:%M')
+        date_fin = datetime.strptime(data["date_fin"], '%d-%m-%Y %H:%M')
+        idAgent = data["agent"]
+        type = data["type"]
+        description = data["description"]
+        links =[]
+        for f in self.request.FILES.getlist('file'):
+             res = cloudinary.uploader.upload(f, folder='attached', resource_type='raw')
+             links.append(res['url'])
+        signalement = Signalement(description=description,dateDebut=date_debut,dateFin=date_fin,type=type,attachedFiles=links)
+        signalement.agent_id = idAgent
+        signalement.save()
+        result = SignalementSerializer(signalement,many=False).data
+        return Response(result)
+        pass
+
 
 class BeamsAgentAuth(APIView):
     def get(self, request):
@@ -622,10 +645,10 @@ class Broadcast(APIView):
             publish_body={
 
                 'fcm': {
-                #     'notification': {
-                #         'title': title,
-                #         'body': message
-                #     },
+                    # 'notification': {
+                    #     'title': title,
+                    #     'body': message
+                    # },
                     'data': {
                         'title': title,
                         'body': message,

@@ -2,6 +2,7 @@ from datetime import time, datetime
 from enum import Enum
 
 from django.contrib.auth.models import User
+from django.utils.timezone import now
 from djongo import models
 from djongo.models import DjongoManager
 from django import forms
@@ -177,6 +178,19 @@ class Evaluation(models.Model):
 
     objects = DjongoManager()
 
+class Signalement(models.Model):
+    idSignalement = models.AutoField(primary_key=True)
+    agent = models.ForeignKey(to=Agent, on_delete=models.CASCADE)
+    type = models.TextField()
+    dateDebut = models.DateTimeField(default=now())
+    dateFin = models.DateTimeField(default=now())
+    description = models.TextField()
+    attachedFiles = models.ListField()
+    objects = DjongoManager()
+
+    @property
+    def idSignalement(self):
+        return self.id
 
 
 class Porposition(models.Model):

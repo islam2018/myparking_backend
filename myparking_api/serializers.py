@@ -21,7 +21,7 @@ from myparking import roles
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
 from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent, Terme, Paiment, Reservation, \
-    PaiementInstance
+    PaiementInstance, Signalement
 from django.contrib.auth.hashers import make_password
 import requests
 
@@ -433,7 +433,7 @@ class ReservationSerializer(serializers.ModelSerializer):
         }
 
         hashed = hashlib.md5(json.dumps(data_to_hash).encode("utf-8")).hexdigest()
-        qrUrl = self.generateQR(hashed)
+        qrUrl = "" #self.generateQR(hashed)
         reservation = Reservation(paiementInstance=paiment,
                                   hashId=hashed,
                                   qrUrl = qrUrl,
@@ -474,3 +474,10 @@ class ReservationSerializer(serializers.ModelSerializer):
         res = cloudinary.uploader.upload(b, folder='reservation')
         return res['url']
 
+
+class SignalementSerializer(serializers.ModelSerializer):
+    agent = AgentProfileSerializer()
+    class Meta:
+        model = Signalement
+        fields = ['idSignalement','agent','type','dateDebut','dateFin','description','attachedFiles']
+        extra_kwargs = {'idSignalement': {'read_only': True}}
