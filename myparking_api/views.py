@@ -571,7 +571,8 @@ class SignalementView(viewsets.ModelViewSet):
     permission_classes = []
     authentication_classes = []
     def create(self, request, *args, **kwargs):
-        data = json.load(request.data['body'])
+
+        data = json.loads(request.data['body'])
         date_debut = datetime.strptime(data["date_debut"], '%d-%m-%Y %H:%M')
         date_fin = datetime.strptime(data["date_fin"], '%d-%m-%Y %H:%M')
         idAgent = data["agent"]
