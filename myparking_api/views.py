@@ -32,7 +32,7 @@ from rolepermissions.checkers import has_role
 from model_optim.affectation import getRecomendedParkings
 from model_optim.helpers.calculateDistance import calculateRouteInfo
 from model_optim.helpers.matrixFormat import Object, splitParkings
-from myparking import roles, beams_client
+from myparking import roles, beams_agent_client, beams_driver_client
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
 from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment, Agent, ETAT_RESERVATION, \
@@ -593,17 +593,17 @@ class SignalementView(viewsets.ModelViewSet):
 class BeamsAgentAuth(APIView):
     def get(self, request):
         id = request.query_params['user_id']
-        beams_token = beams_client.generate_token("agent"+id)
+        beams_token = beams_agent_client.generate_token("agent"+id)
         return Response(beams_token)
 class BeamsDriverAuth(APIView):
     def get(self, request):
         id = request.query_params['user_id']
-        beams_token = beams_client.generate_token("driver"+id)
+        beams_token = beams_driver_client.generate_token("driver"+id)
         return Response(beams_token)
 
 
 
-class SendNotif(APIView):
+class SendAgentNotif(APIView):
     permission_classes = []
     authentication_classes = []
     def post(self,request):
@@ -611,9 +611,8 @@ class SendNotif(APIView):
         message = request.data['body']
         content = request.data['content']
         user_id = request.data['user_id']
-        to = request.data['destination']
         aav= "agent"+user_id  ## fix this LATER
-        response = beams_client.publish_to_users(
+        response = beams_agent_client.publish_to_users(
             user_ids=[aav],
             publish_body={
 
@@ -633,7 +632,7 @@ class SendNotif(APIView):
         )
         return Response(response)
 
-class Broadcast(APIView):
+class BroadcastAgent(APIView):
     permission_classes = []
     authentication_classes = []
     def post(self,request):
@@ -641,7 +640,64 @@ class Broadcast(APIView):
         message = request.data['body']
         content = request.data['content']
         interest = request.data['interest']
-        response = beams_client.publish_to_interests(
+        response = beams_agent_client.publish_to_interests(
+            interests=[interest],
+            publish_body={
+
+                'fcm': {
+                    # 'notification': {
+                    #     'title': title,
+                    #     'body': message
+                    # },
+                    'data': {
+                        'title': title,
+                        'body': message,
+                        'content': content
+                    }
+                },
+
+            }
+        )
+        return Response(response)
+
+class SendDriverNotif(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def post(self,request):
+        title = request.data['title']
+        message = request.data['body']
+        content = request.data['content']
+        user_id = request.data['user_id']
+        aav= "driver"+user_id  ## fix this LATER
+        response = beams_driver_client.publish_to_users(
+            user_ids=[aav],
+            publish_body={
+
+                'fcm': {
+                    # 'notification': {
+                    #     'title': title,
+                    #     'body': message,
+                    # },
+                    'data': {
+                        'title': title,
+                        'body': message,
+                        'content': content
+                    }
+                },
+
+            }
+        )
+        return Response(response)
+
+class BroadcastDriver(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def post(self,request):
+        title = request.data['title']
+        message = request.data['body']
+        content = request.data['content']
+        interest = request.data['interest']
+        response = beams_driver_client.publish_to_interests(
             interests=[interest],
             publish_body={
 

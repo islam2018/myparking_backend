@@ -88,13 +88,14 @@ def getReservations(dataframe, users, idCluster):
             i = dataframe.loc[dataframe['ID'] == res[12]].index[0]
             j = users.loc[users['idAutomobiliste'] == res[13]].index[0]
             print(i,j, 'ij indexex parking user for reserv')
+            RESERV.append({
+                'i': i,
+                'j': j
+            })
         except Exception:
             print("GET RESERVATION FOR MODEL ERRORR")
             pass
-        RESERV.append({
-            'i': i,
-            'j': j
-        })
+
     return RESERV
 
 

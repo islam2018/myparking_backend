@@ -38,8 +38,10 @@ urlpatterns = [
     path('agent/<id>', views.AgentView.as_view()),
     path('pusher/beams_auth/agent', views.BeamsAgentAuth.as_view()),
     path('pusher/beams_auth/driver', views.BeamsDriverAuth.as_view()),
-    path('pusher/notify', views.SendNotif.as_view()),
-    path('pusher/broadcast', views.Broadcast.as_view()),
+    path('pusher/notify/agent', views.SendAgentNotif.as_view()),
+    path('pusher/broadcast/agent', views.BroadcastAgent.as_view()),
+    path('pusher/notify/driver', views.SendDriverNotif.as_view()),
+    path('pusher/broadcast/driver', views.BroadcastDriver.as_view()),
 
 ]
 
