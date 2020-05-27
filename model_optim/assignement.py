@@ -1,7 +1,7 @@
 import pandas as pd
 from geopy.distance import great_circle
 
-from model_optim.persistance import saveUserAssignmentToCluster
+from model_optim.persistance import saveUserAssignmentToCluster, hasReservation
 from myparking_api.models import Cluster, Automobiliste
 import numpy as np
 
@@ -22,10 +22,15 @@ def assignToClusters():
     for user in users.iloc:
         print(user)
         idAutomobiliste = user['idAutomobiliste']
-        crd = [user['position'][0],user['position'][1]]
-        print(crd)
-        affect = min(centers, key=lambda point: great_circle(point, crd).m)
-        result = np.where(centers == affect)
-        idCluster = dataframe.iloc[result[0][0]]['idCluster']
-        print(idCluster, idAutomobiliste)
-        saveUserAssignmentToCluster(int(idAutomobiliste), int(idCluster))
+        idcls = int(hasReservation(idAutomobiliste))
+        if idcls > -1:
+            print(idcls, idAutomobiliste)
+            saveUserAssignmentToCluster(int(idAutomobiliste), int(idcls))
+        else:
+            crd = [user['position'][0],user['position'][1]]
+            print(crd)
+            affect = min(centers, key=lambda point: great_circle(point, crd).m)
+            result = np.where(centers == affect)
+            idCluster = dataframe.iloc[result[0][0]]['idCluster']
+            print(idCluster, idAutomobiliste)
+            saveUserAssignmentToCluster(int(idAutomobiliste), int(idCluster))

@@ -1,13 +1,15 @@
 """ Save and update database :
     Parking disponibility, state of clusters, users assignments
 """
+import datetime
 import random
 
 import pandas as pd
 from django.db import transaction
+from django.utils.timezone import now
 
 from model_optim.helpers.calculateCentroid import get_centermost_point
-from myparking_api.models import Cluster, Porposition, Reservation, Parking
+from myparking_api.models import Cluster, Porposition, Reservation, Parking, ETAT_RESERVATION
 import numpy as np
 
 
@@ -97,6 +99,21 @@ def getReservations(dataframe, users, idCluster):
             pass
 
     return RESERV
+
+def hasReservation(idAutomobiliste):
+    print("driver has reservation ?")
+    reservations = Reservation.objects.filter(automobiliste_id=idAutomobiliste,
+                                              state=ETAT_RESERVATION.EN_COURS.value).values_list()
+    dataframe = pd.DataFrame.from_records(reservations,
+                                          columns=['idReservation', '1', '2', '3', '4','5','6','7','8','9','10',
+                                                   '11','idParking','13','14','15'])
+    if (dataframe.size>0):
+        id_parking= dataframe.iloc[0]['idParking']
+        print(id_parking)
+        cluster = Cluster.objects.get(parkings=id_parking)
+        print(cluster.id)
+        return cluster.id
+    else: return -1
 
 
 """FOR SIMULATION PURPOSES"""

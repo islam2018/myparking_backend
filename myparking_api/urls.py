@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.urls import include, path
 
-from model_optim import AFTER_SERVER_INIT
+from model_optim import AFTER_SERVER_INIT, runModel
 from . import views
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -46,5 +46,5 @@ urlpatterns = [
 ]
 
 # Run the model after server is
-
+#runModel()
 AFTER_SERVER_INIT()
