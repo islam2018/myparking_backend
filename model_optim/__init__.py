@@ -12,7 +12,7 @@ from myparking_api.models import  Cluster
 
 def runModel():
     with transaction.atomic():
-        getParkingClustegrs()  # Clusetring and save into database
+        getParkingClusters()  # Clusetring and save into database
         assignToClusters()  # Assign users to clusters and save into database
         clusters = Cluster.objects.all().values_list()
         dataframe = pd.DataFrame.from_records(clusters,
