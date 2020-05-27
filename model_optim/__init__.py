@@ -12,7 +12,7 @@ from myparking_api.models import  Cluster
 
 def runModel():
     with transaction.atomic():
-        getParkingClusters()  # Clusetring and save into database
+        getParkingClustegrs()  # Clusetring and save into database
         assignToClusters()  # Assign users to clusters and save into database
         clusters = Cluster.objects.all().values_list()
         dataframe = pd.DataFrame.from_records(clusters,
@@ -30,6 +30,6 @@ def AFTER_SERVER_INIT():
     scheduler = BackgroundScheduler()
     scheduler.add_job(runModel, 'interval', minutes =1)
     """For simulation purposes """
-    scheduler.add_job(changeParkingDispo, 'interval', minutes=1)
+    #scheduler.add_job(changeParkingDispo, 'interval', minutes=1)
     """"""
     scheduler.start()
