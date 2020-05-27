@@ -5,7 +5,7 @@ from myparking_api.models import Cluster, Porposition, Parking
 
 def getRecomendedParkings(idAutomobiliste): #return a querySet
     query = Cluster.objects.filter(drivers=idAutomobiliste).values_list()
-    cluster = pd.DataFrame.from_records(query,
+    cluster = pd.DatamFrame.from_records(query,
                                         columns=['idCluster', 'label', 'centroid','reservations', 'parkings', 'drivers',
                                                  'propositions']).iloc[0]
     propositions_ids= list(cluster['propositions'])

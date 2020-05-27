@@ -9,7 +9,7 @@ from psycopg2._psycopg import Date
 
 
 class Tarif(models.Model):
-    idTarif =  models.AutoField(primary_key=True)
+    idTarif = models.AutoField(primary_key=True)
     duree = models.FloatField()
     prix = models.FloatField()
 
@@ -19,7 +19,7 @@ class Tarif(models.Model):
 
 
 class Equipement(models.Model):
-    idEquipement =  models.AutoField(primary_key=True)
+    idEquipement = models.AutoField(primary_key=True)
     designation = models.TextField()
     iconUrl = models.TextField()
 
@@ -29,7 +29,7 @@ class Equipement(models.Model):
 
 
 class Horaire(models.Model):
-    idHoraire  = models.AutoField(primary_key=True)
+    idHoraire = models.AutoField(primary_key=True)
     jour = models.IntegerField()
     HeureOuverture = models.TimeField()
     HeureFermeture = models.TimeField()
@@ -42,7 +42,7 @@ class Horaire(models.Model):
 
 
 class Etage(models.Model):
-    idEtage =  models.AutoField(primary_key=True)
+    idEtage = models.AutoField(primary_key=True)
     nbPlaces = models.IntegerField()
 
     @property
@@ -51,8 +51,9 @@ class Etage(models.Model):
 
     objects = DjongoManager()
 
+
 class Terme(models.Model):
-    idTerme =  models.AutoField(primary_key=True)
+    idTerme = models.AutoField(primary_key=True)
     contenu = models.TextField()
 
     @property
@@ -61,12 +62,14 @@ class Terme(models.Model):
 
     objects = DjongoManager()
 
+
 class EtageForm(forms.ModelForm):
     class Meta:
         model = Etage
         fields = (
-             'nbPlaces',
+            'nbPlaces',
         )
+
 
 class Paiment(models.Model):
     idPaiment = models.AutoField(primary_key=True)
@@ -78,7 +81,6 @@ class Paiment(models.Model):
         return self.id
 
     objects = DjongoManager()
-
 
 
 class Parking(models.Model):
@@ -97,7 +99,6 @@ class Parking(models.Model):
     equipements = models.ArrayReferenceField(to=Equipement, on_delete=models.DO_NOTHING, blank=True)
     paiments = models.ArrayReferenceField(to=Paiment, on_delete=models.DO_NOTHING, blank=True)
     termes = models.ArrayReferenceField(to=Terme, on_delete=models.DO_NOTHING, blank=True)
-
 
     @property
     def idParking(self):
@@ -128,7 +129,7 @@ class Agent(models.Model):
     nom = models.TextField(default='')
     prenom = models.TextField(default='')
     auth = models.OneToOneField(to=User, on_delete=models.CASCADE, default=None, related_name='agentProfile')
-    parking = models.ForeignKey(to=Parking,on_delete=models.CASCADE)
+    parking = models.ForeignKey(to=Parking, on_delete=models.CASCADE)
     objects = DjongoManager()
 
     @property
@@ -141,9 +142,11 @@ class PaiementInstance(models.Model):
     montant = models.TextField()
     date = models.DateTimeField()
     objects = DjongoManager()
+
     @property
     def idPaiementInstance(self):
         return self.id
+
 
 class Reservation(models.Model):
     idReservation = models.AutoField(primary_key=True)
@@ -152,14 +155,14 @@ class Reservation(models.Model):
     qrUrl = models.TextField()
     state = models.TextField(default='En cours')
     etageAttribue = models.IntegerField(default=1)
-    placeAttribue= models.IntegerField(default=1)
+    placeAttribue = models.IntegerField(default=1)
     dateReservation = models.DateTimeField(default=datetime.today())
     dateEntreePrevue = models.DateTimeField(default=datetime.today())
     dateSortiePrevue = models.DateTimeField(default=datetime.today())
     dateEntreeEffective = models.DateTimeField(default=datetime.today())
     dateSortieEffective = models.DateTimeField(default=datetime.today())
-    parking = models.ForeignKey(to=Parking,on_delete=models.CASCADE)
-    automobiliste = models.ForeignKey(to=Automobiliste,on_delete=models.CASCADE)
+    parking = models.ForeignKey(to=Parking, on_delete=models.CASCADE)
+    automobiliste = models.ForeignKey(to=Automobiliste, on_delete=models.CASCADE)
     paiment = models.ForeignKey(to=Paiment, on_delete=models.CASCADE)
     paiementInstance = models.OneToOneField(to=PaiementInstance, on_delete=models.CASCADE, default=None)
     objects = DjongoManager()
@@ -167,7 +170,6 @@ class Reservation(models.Model):
     @property
     def idReservation(self):
         return self.id
-
 
 
 class Evaluation(models.Model):
@@ -178,10 +180,9 @@ class Evaluation(models.Model):
     objects = DjongoManager()
 
 
-
 class Porposition(models.Model):
     idProposition = models.AutoField(primary_key=True)
-    automobiliste = models.ForeignKey(to=Automobiliste,on_delete=models.CASCADE)
+    automobiliste = models.ForeignKey(to=Automobiliste, on_delete=models.CASCADE)
     parking = models.ForeignKey(to=Parking, on_delete=models.CASCADE)
     value = models.IntegerField(default=0)
 
@@ -189,12 +190,13 @@ class Porposition(models.Model):
     def idProposition(self):
         return self.id
 
+
 class Cluster(models.Model):
     idCluster = models.AutoField(primary_key=True)
     label = models.TextField()
     centroid = models.ListField()
     reservations = models.ArrayReferenceField(to=Reservation, on_delete=models.CASCADE)
-    parkings = models.ArrayReferenceField(to=Parking,on_delete=models.CASCADE)
+    parkings = models.ArrayReferenceField(to=Parking, on_delete=models.CASCADE)
     drivers = models.ArrayReferenceField(to=Automobiliste, on_delete=models.CASCADE)
     propositions = models.ArrayReferenceField(to=Porposition, on_delete=models.CASCADE)
     objects = DjongoManager()
@@ -203,8 +205,9 @@ class Cluster(models.Model):
     def idCluster(self):
         return self.id
 
+
 class ETAT_RESERVATION(Enum):
-     EN_COURS = "En cours"
-     VALIDEE = "Validée"
-     TERMINE = "Terminée"
-     REFUSEE = "Refusée"
+    EN_COURS = "En cours"
+    VALIDEE = "Validée"
+    TERMINE = "Terminée"
+    REFUSEE = "Refusée"
