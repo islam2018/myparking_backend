@@ -21,7 +21,7 @@ from myparking import roles
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
 from .models import Etage, Parking, Horaire, Tarif, Equipement, Automobiliste, Agent, Terme, Paiment, Reservation, \
-    PaiementInstance, Signalement
+    PaiementInstance, Signalement, Message
 from django.contrib.auth.hashers import make_password
 import requests
 
@@ -481,3 +481,12 @@ class SignalementSerializer(serializers.ModelSerializer):
         model = Signalement
         fields = ['idSignalement','agent','type','dateDebut','dateFin','description','attachedFiles']
         extra_kwargs = {'idSignalement': {'read_only': True}}
+
+class MessageSerializer(serializers.ModelSerializer):
+    driver = AutomobilisteProfileSerializer(read_only=True)
+    driver_id = serializers.CharField(write_only=True)
+    class Meta:
+        model = Message
+        fields = ['idMessage','driver_id','driver','date','objet','message']
+        extra_kwargs = {'idSignalement': {'read_only': True},
+                        'date': {'read_only':True}}

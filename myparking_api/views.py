@@ -36,10 +36,10 @@ from myparking import roles, beams_agent_client, beams_driver_client
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
 from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment, Agent, ETAT_RESERVATION, \
-    Signalement
+    Signalement, Message
 from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerializer, AgentSerializer, AdminSerializer, \
     EquipementSerializer, ReservationSerializer, FavorisSerializer, PaimentSerializer, AgentProfileSerializer, \
-    SignalementSerializer
+    SignalementSerializer, MessageSerializer
 from pusher_push_notifications import PushNotifications
 
 class EquipementView(viewsets.ModelViewSet):
@@ -717,4 +717,10 @@ class BroadcastDriver(APIView):
         )
         return Response(response)
 
+
+class ContactView(viewsets.ModelViewSet):
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+    permission_classes = []
+    authentication_classes = []
 

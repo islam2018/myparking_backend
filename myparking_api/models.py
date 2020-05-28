@@ -203,6 +203,17 @@ class Porposition(models.Model):
     def idProposition(self):
         return self.id
 
+class Message(models.Model):
+    idMessage = models.AutoField(primary_key=True)
+    objet = models.TextField()
+    message = models.TextField()
+    date = models.DateTimeField(default=now())
+    driver = models.ForeignKey(to=Automobiliste, on_delete=models.CASCADE)
+    objects = DjongoManager()
+    @property
+    def idMessage(self):
+        return self.id
+
 class Cluster(models.Model):
     idCluster = models.AutoField(primary_key=True)
     label = models.TextField()
