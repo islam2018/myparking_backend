@@ -717,16 +717,29 @@ class BroadcastDriver(APIView):
         )
         return Response(response)
 
-class PubSubAuth(APIView):
+class PubSub(viewsets.ModelViewSet):
     permission_classes = []
     authentication_classes = []
-    def post(self, request,id):
+    def auth(self, request,id):
         channel = request.data['channel_name']
         socket_id = request.data['socket_id']
         auth = pusher_client.authenticate(channel,socket_id,{
             'user_id':id
         })
         return Response(auth)
+
+    def webhook(self, request):
+        webhook = pusher_client.validate_webhook(
+            key=request.headers.get('X-Pusher-Key'),
+            signature=request.headers.get('X-Pusher-Signature'),
+            body=request.data
+        )
+        for event in webhook['events']:
+            if event['name'] == "channel_occupied":
+                print("Channel occupied: %s" % event["channel"])
+            elif event['name'] == "channel_vacated":
+                print("Channel vacated: %s" % event["channel"])
+        return Response("ok")
 
 
 class ContactView(viewsets.ModelViewSet):
