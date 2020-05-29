@@ -4,8 +4,11 @@ import math
 import statistics
 import time
 import timeit
+import tracemalloc
+
 import matplotlib.pyplot as plt
 import numpy as np
+import psutil as psutil
 
 from model_optim.helpers.simulationData import generateNearbyGPSPosition
 
@@ -24,9 +27,15 @@ def updateUserBDD(id_automobliste, new_position):
     print("updating automobiliste position using islam's route" + str(id_automobliste) + ' ' + str(new_position))
 
 
-def requestParkings(id_automobiliste, position, min_price, max_price, min_distance, max_distance, equipements,
+def requestParkings(id_automobiliste, depart, destination, min_price, max_price, min_distance, max_distance, equipements,
                     use_optimisation):
     print("runs request using optim or not")
+    return []
+
+
+def updateSelectedParkingInfo(idParking):
+    print(str(idParking))
+    # update nb places --
 
 
 NB_USERS = 300
@@ -40,6 +49,7 @@ MAX_DISTANCE = 1000
 
 
 def main(_lambda, _num_events, use_optimisation):
+    tracemalloc.start()  # to track memory usage
     _event_num = []
     _inter_event_times = []
     _event_times = []
@@ -47,6 +57,8 @@ def main(_lambda, _num_events, use_optimisation):
     print('EVENT_NUM,INTER_EVENT_T,EVENT_T')
     start = timeit.default_timer()
     user_ids = []
+    recommended = []  # ids of recomended parkings
+    unsatisfied_users = 0
     for i in range(_num_events):
         _event_num.append(i)
         # Get a random probability value from the uniform distribution's PDF
@@ -71,21 +83,42 @@ def main(_lambda, _num_events, use_optimisation):
                 user_info = user
         print("selected user " + str(user_info[0]))
         user_ids.append(user_info[0])  # id automobiliste
-        position = generateNearbyGPSPosition(NEARBY_RADIUS, user_info[6][0], user_info[6][1])  # lat, lon
+        depart = generateNearbyGPSPosition(NEARBY_RADIUS, user_info[6][0], user_info[6][1])  # lat, lon
+        destination = generateNearbyGPSPosition(NEARBY_RADIUS, depart[0], depart[1])  # lat, lon
         prix_min, prix_max, distance_min, distance_max, equipements = generateRandomFiltersValues()
-        updateUserBDD(id_automobliste=user_info[0], new_position=position)
+        updateUserBDD(id_automobliste=user_info[0], new_position=depart)
         # generate request function here
-        requestParkings(id_automobiliste=user_info[0], position=position, min_price=prix_min, max_price=prix_max,
-                        min_distance=distance_min, max_distance=distance_max, equipements=equipements,
-                        use_optimisation=use_optimisation)
+
+        recommended = requestParkings(id_automobiliste=user_info[0], depart=depart, destination=destination,
+                                      min_price=prix_min,
+                                      max_price=prix_max,
+                                      min_distance=distance_min, max_distance=distance_max, equipements=equipements,
+                                      use_optimisation=use_optimisation)
+        current, peak = tracemalloc.get_traced_memory()
+
+        if not recommended:  # empty
+            unsatisfied_users += 1
+        else:
+            updateSelectedParkingInfo(idParking=recommended[0])
         # print it all out
         print("Automibliste number : " + str(
             i) + ' arrived  after ' + '%.2f' % _inter_event_time + ' - at time t0 + ' + "%.2f" % _event_time)
-        print('Request: id: ' + str(user_info[0]) + ' /position : ' + str(position) + ' /equipements : ' + str(
+        print('Request: id: ' + str(user_info[0]) + ' /start : ' + str(start) + ' /destination : ' + str(
+            destination) + '/equipements : ' + str(
             equipements))
         print('\t\t prix in [{}, {}] distance in [{}, {}]'.format(prix_min, prix_max, distance_min, distance_max))
     stop = timeit.default_timer()
     print('Time of simulation : ', stop - start)
+    print(f"Current Memroy usage for request is {current / 10 ** 6}MB; Peak was : {peak / 10 ** 6}MB")
+
+    tracemalloc.stop()
+    fig = plt.figure()
+    #  fig.title('Temps absolu des événements consécutifs dans un processus simulé de Poisson')
+    plot, = plt.plot(_event_num, _event_times, 'bo-', label='Moment d\'arrivé d\'une demande de recherche')
+    plt.legend(handles=[plot])
+    plt.xlabel('Ordre de requête')
+    plt.ylabel('Temps')
+    plt.show()
 
 
 # plot the inter-event times
@@ -137,14 +170,25 @@ def main(_lambda, _num_events, use_optimisation):
 # plt.xlabel('Index of interval')
 # plt.ylabel('Number of events')
 # plt.show()
+
+
+def plotting():
+    print("plotting")
+
+
 if __name__ == '__main__':
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myparking.settings')
     from django.core.wsgi import get_wsgi_application
 
     application = get_wsgi_application()
     from myparking_api.models import Parking, Automobiliste
+    import pandas as pd
 
+    process = psutil.Process(os.getpid())
+    results_for_plots = pd.DataFrame(data={'30': [0, 0, 0, 0], '100': [0, 0, 0, 0], '1000': [0, 0, 0, 0]})
     rateOfArrival = 5  # average number of automobliste in 1 h, can be heigher for heavier traffic
     numberOfRequests = 100  # number of requests
     use_optim = True  # use optimisation algorithmes
     main(rateOfArrival, numberOfRequests, use_optim)
+    print(f"Current CPU usage ", process.cpu_percent())
+    plotting()
