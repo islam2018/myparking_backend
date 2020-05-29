@@ -732,7 +732,7 @@ class PubSub(viewsets.ModelViewSet):
         webhook = pusher_client.validate_webhook(
             key=request.META['X-Pusher-Key'],
             signature=request.META['X-Pusher-Signature'],
-            body=request.data
+            body=json.dumps(request.data)
         )
         for event in webhook['events']:
             if event['name'] == "channel_occupied":
