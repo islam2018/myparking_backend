@@ -730,8 +730,8 @@ class PubSub(viewsets.ModelViewSet):
 
     def webhook(self, request):
         webhook = pusher_client.validate_webhook(
-            key=request.headers.get('X-Pusher-Key'),
-            signature=request.headers.get('X-Pusher-Signature'),
+            key=request.META['X-Pusher-Key'],
+            signature=request.META['X-Pusher-Signature'],
             body=request.data
         )
         for event in webhook['events']:
