@@ -49,4 +49,4 @@ urlpatterns = [
 
 # Run the model after server is
 #runModel()
-#AFTER_SERVER_INIT()
+AFTER_SERVER_INIT()
