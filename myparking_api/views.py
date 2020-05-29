@@ -1,6 +1,7 @@
 import base64
 import binascii
 import hashlib
+import hmac
 import io
 import json
 import numpy as np
@@ -18,6 +19,7 @@ from django.db import transaction
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
+from django.utils.timezone import now
 
 from rest_framework import viewsets, permissions, status, mixins
 from rest_framework.generics import GenericAPIView
@@ -32,7 +34,7 @@ from rolepermissions.checkers import has_role
 from model_optim.affectation import getRecomendedParkings
 from model_optim.helpers.calculateDistance import calculateRouteInfo
 from model_optim.helpers.matrixFormat import Object, splitParkings
-from myparking import roles, beams_agent_client, beams_driver_client, pusher_client
+from myparking import roles, beams_agent_client, beams_driver_client
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
 from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment, Agent, ETAT_RESERVATION, \
@@ -717,30 +719,13 @@ class BroadcastDriver(APIView):
         )
         return Response(response)
 
-class PubSub(viewsets.ModelViewSet):
+class UpdateLocation(viewsets.ModelViewSet):
     permission_classes = []
     authentication_classes = []
-    def auth(self, request,id):
-        channel = request.data['channel_name']
-        socket_id = request.data['socket_id']
-        auth = pusher_client.authenticate(channel,socket_id,{
-            'user_id':id
-        })
-        print("AUTH_PUSHER",auth)
-        return Response(auth)
-
-    def webhook(self, request):
-        webhook = pusher_client.validate_webhook(
-            key=request.data['key'],
-            signature=request.data['signature'],
-            body=json.dumps(request.data)
-        )
-        for event in webhook['events']:
-            if event['name'] == "channel_occupied":
-                print("Channel occupied: %s" % event["channel"])
-            elif event['name'] == "channel_vacated":
-                print("Channel vacated: %s" % event["channel"])
-        return Response("ok")
+    def updateDriverLocation(self, request):
+        data_str = json.dumps(request.data)
+        return Response({
+            'data':data_str, 'time':now()})
 
 
 class ContactView(viewsets.ModelViewSet):
@@ -748,5 +733,7 @@ class ContactView(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     permission_classes = []
     authentication_classes = []
+
+
 
 

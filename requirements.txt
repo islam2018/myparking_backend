@@ -33,7 +33,6 @@ numpy==1.18.2
 pandas==1.0.3
 Pillow==7.0.0
 psycopg2==2.8.4
-pusher==3.0.0
 pusher-push-notifications==2.0.0
 pyasn1==0.4.8
 pycparser==2.20

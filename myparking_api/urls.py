@@ -1,7 +1,6 @@
 
 from django.urls import include, path
 
-from model_optim import AFTER_SERVER_INIT, runModel
 from . import views
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -36,8 +35,7 @@ urlpatterns = [
     path('agent/report', views.SignalementView.as_view({'post': 'create'})),
     path('agent/<id>', views.AgentView.as_view()),
     path('driver/contact', views.ContactView.as_view({'post': 'create'})),
-    path('pusher/auth/<id>', views.PubSub.as_view({'post':'auth'})),
-    path('pusher/webhook', views.PubSub.as_view({'post':'webhook'})),
+    path('driver/updateLocation', views.UpdateLocation.as_view({'post': 'updateDriverLocation'})),
     path('pusher/beams_auth/agent', views.BeamsAgentAuth.as_view()),
     path('pusher/beams_auth/driver', views.BeamsDriverAuth.as_view()),
     path('pusher/notify/agent', views.SendAgentNotif.as_view()),

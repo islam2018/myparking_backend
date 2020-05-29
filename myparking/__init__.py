@@ -1,3 +1,7 @@
+import binascii
+import hashlib
+import hmac
+
 import cloudinary
 from pusher_push_notifications import PushNotifications
 import pusher
@@ -8,12 +12,6 @@ beams_agent_client = PushNotifications(
 beams_driver_client = PushNotifications(
     instance_id='68987f6c-1b73-4e06-8515-b8db77033090',
     secret_key='BB3232FF32F5C90134AC13A975246478FC54424C91C6B459D938250030A9DCA0',
-)
-pusher_client = pusher.Pusher(
-  app_id="1008479",
-  key="64aeb36b21ab17679882",
-  secret="1dfcaba05e0e0bf38ec6",
-  cluster="eu"
 )
 cloudinary.config(
   cloud_name = "hhpni8wqv",
