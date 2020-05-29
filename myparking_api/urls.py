@@ -37,6 +37,7 @@ urlpatterns = [
     path('agent/report', views.SignalementView.as_view({'post': 'create'})),
     path('agent/<id>', views.AgentView.as_view()),
     path('driver/contact', views.ContactView.as_view({'post': 'create'})),
+    path('pusher/auth/<id>', views.PubSubAuth.as_view()),
     path('pusher/beams_auth/agent', views.BeamsAgentAuth.as_view()),
     path('pusher/beams_auth/driver', views.BeamsDriverAuth.as_view()),
     path('pusher/notify/agent', views.SendAgentNotif.as_view()),
@@ -48,4 +49,4 @@ urlpatterns = [
 
 # Run the model after server is
 #runModel()
-AFTER_SERVER_INIT()
+#AFTER_SERVER_INIT()

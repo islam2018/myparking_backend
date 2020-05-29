@@ -32,7 +32,7 @@ from rolepermissions.checkers import has_role
 from model_optim.affectation import getRecomendedParkings
 from model_optim.helpers.calculateDistance import calculateRouteInfo
 from model_optim.helpers.matrixFormat import Object, splitParkings
-from myparking import roles, beams_agent_client, beams_driver_client
+from myparking import roles, beams_agent_client, beams_driver_client, pusher_client
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
 from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment, Agent, ETAT_RESERVATION, \
@@ -717,10 +717,22 @@ class BroadcastDriver(APIView):
         )
         return Response(response)
 
+class PubSubAuth(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def post(self, request,id):
+        channel = request.data['channel_name']
+        socket_id = request.data['socket_id']
+        auth = pusher_client.authenticate(channel,socket_id,{
+            'user_id':id
+        })
+        return Response(auth)
+
 
 class ContactView(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     permission_classes = []
     authentication_classes = []
+
 
