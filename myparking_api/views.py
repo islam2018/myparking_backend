@@ -726,12 +726,13 @@ class PubSub(viewsets.ModelViewSet):
         auth = pusher_client.authenticate(channel,socket_id,{
             'user_id':id
         })
+        print("AUTH_PUSHER",auth)
         return Response(auth)
 
     def webhook(self, request):
         webhook = pusher_client.validate_webhook(
-            key=request.META['X-Pusher-Key'],
-            signature=request.META['X-Pusher-Signature'],
+            key=request.data['key'],
+            signature=request.data['signature'],
             body=json.dumps(request.data)
         )
         for event in webhook['events']:
