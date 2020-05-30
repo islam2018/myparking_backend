@@ -723,9 +723,13 @@ class UpdateLocation(viewsets.ModelViewSet):
     permission_classes = []
     authentication_classes = []
     def updateDriverLocation(self, request):
-        data_str = json.dumps(request.data)
-        return Response({
-            'data':data_str, 'time':now()})
+        driverId = request.data['driverId']
+        lat = request.data['lat']
+        long = request.data['long']
+        au = Automobiliste.objects.get(id=driverId)
+        au.position=[lat,long]
+        au.save()
+        return Response("Position mis à jour.")
 
 
 class ContactView(viewsets.ModelViewSet):

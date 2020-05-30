@@ -276,7 +276,7 @@ class AutomobilisteSerializer(serializers.HyperlinkedModelSerializer):
         user.save()
         assign_role(user, roles.Driver)
         au = Automobiliste(auth=user, **profile_data)
-        au.position= []
+        au.position= [36.75414,3.0565433]
         au.save()
         return user
 
