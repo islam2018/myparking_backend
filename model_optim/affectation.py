@@ -1,7 +1,6 @@
 import pandas as pd
-
 from model_optim import runModel
-from myparking_api.models import Cluster, Porposition, Parking
+from myparking_api.models import Porposition, Parking, Cluster
 
 
 def getRecomendedParkings(idAutomobiliste): #return a querySet
@@ -22,3 +21,4 @@ def getRecomendedParkings(idAutomobiliste): #return a querySet
     else:
         runModel()
         return getRecomendedParkings(int(idAutomobiliste))
+

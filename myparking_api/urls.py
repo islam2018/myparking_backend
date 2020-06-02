@@ -1,6 +1,8 @@
 
 from django.urls import include, path
 
+from model_optim import runModel
+from model_optim.forSimulationOnly import optimizeWithoutClustering
 from . import views
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -20,7 +22,7 @@ router.register('paiements', views.PaiementView)
 urlpatterns = [
     path('', include(router.urls)),
     path('api-auth/', include('rest_framework.urls')),
-    # path('parking/<idParking>', views.ParkingView.as_view({'get': 'getOneParking'}), name='OneParking'),
+    path('getParkings', views.TestParkingView.as_view({'get': 'withMode'}), name='withMode'),
     # path('filterParkings', views.ParkingView.as_view({'get': 'filterParkings'}), name='FilterParking'),
     path('search', views.SearchView.as_view()),
     path('api/driver/login', DriverLoginViewJWT.as_view()),
@@ -47,6 +49,7 @@ urlpatterns = [
 
 # Run the model after server is
 #runModel()
+#optimizeWithoutClustering()
 #AFTER_SERVER_INIT()
 
 

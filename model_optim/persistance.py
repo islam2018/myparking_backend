@@ -15,24 +15,11 @@ import numpy as np
 
 def saveParkingsClusters(clusters):
     #delete all old clusters first
-    old_clusters = Cluster.objects.all().values_list()
-    for old in old_clusters:
-        print(old)
-        id_props = list(old[6]) #for propisitons
-        print('old cluster', old, id_props)
-        print(id_props)
-        try:
-            instances = Porposition.objects.filter(id__in=id_props)
-            print("OLD P",instances.values_list())
-            instances.delete()
-        except Exception:
-            print("NO OLD PROPOSITIONS FOUND")
-            pass
     Cluster.objects.all().delete()
+    Porposition.objects.all().delete()
 
     label = 0
     for c in clusters:
-
         cluster = Cluster(label=label)
         cluster.parkings_id = c['ID'].to_list()
         center = list(get_centermost_point(c[['LAT', 'LON']].to_numpy()))
@@ -62,9 +49,10 @@ def saveAffectations(dataframe, users, affectations, idCluster):
     for ix,iy in np.ndindex(array.shape):
         idParking = dataframe.iloc[iy]['ID']
         idAutomobiliste = users.iloc[ix]['idAutomobiliste']
-        proposition = Porposition(automobiliste_id=idAutomobiliste, parking_id=idParking, value=array[ix,iy])
-        proposition.save()
-        props_id.append(proposition.id)
+        if (int(array[ix,iy])==1):
+            proposition = Porposition(automobiliste_id=idAutomobiliste, parking_id=idParking, value=array[ix,iy])
+            proposition.save()
+            props_id.append(proposition.id)
     cluster.propositions_id = props_id
     cluster.save()
 
@@ -145,3 +133,5 @@ def changeParkingDispo():
             park = Parking.objects.get(id=id)
             park.nbPlacesLibres = newLibre
             park.save()
+
+

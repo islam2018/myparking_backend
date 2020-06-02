@@ -32,6 +32,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rolepermissions.checkers import has_role
 
 from model_optim.affectation import getRecomendedParkings
+from model_optim.forSimulationOnly import getTestRecommandations
 from model_optim.helpers.calculateDistance import calculateRouteInfo
 from model_optim.helpers.matrixFormat import Object, splitParkings
 from myparking import roles, beams_agent_client, beams_driver_client
@@ -153,6 +154,9 @@ class ParkingView(viewsets.ModelViewSet):
                 return False
         except Exception:
             return True
+
+
+
     # def getOneParking(self, request, idParking=None):
     #     parking = get_object_or_404(self.queryset, id=idParking)
     #     serializer = ParkingSerializer(parking, context={'request': request})
@@ -739,5 +743,94 @@ class ContactView(viewsets.ModelViewSet):
     authentication_classes = []
 
 
+class TestParkingView(viewsets.ModelViewSet):
+    queryset = Parking.objects.all()
+    serializer_class = ParkingSerializer
+    permission_classes = []
+    authentication_classes = []
+    def withMode(self, request, *args, **kwargs):
+        try:
+            mode = int(request.query_params['mode'])
+            print(mode)
+            queryParkings =getTestRecommandations(int(request.query_params['automobiliste']),int(mode))
+
+            try:
+                start = request.query_params['start']
+            except Exception:
+                start = None
+            try:
+                destination = request.query_params['destination']
+            except Exception:
+                destination = None
+            #(travelData, walkingData) = calculateRouteInfo(queryParkings, start, destination)
+
+            parkings = ParkingSerializer(queryParkings, many=True, context={
+                'request': request, }).data
+            res = parkings
 
 
+        except Parking.DoesNotExist:
+            raise Http404
+
+        try:
+            minDistance = request.query_params['minDistance']
+        except Exception:
+            minDistance = 0
+        try:
+            maxDistance = request.query_params['maxDistance']
+        except Exception:
+            maxDistance = 1000000000
+        try:
+            minPrice = request.query_params['minPrice']
+        except Exception:
+            minPrice = 0
+        try:
+            maxPrice = request.query_params['maxPrice']
+        except Exception:
+            maxPrice = 1000000000
+        try:
+            equipements_id = request.query_params['equipements'].split(',')
+        except Exception:
+            equipements_id = []
+        print(minDistance, maxDistance, minPrice, maxPrice, equipements_id)
+        if (minDistance != 0 or maxDistance != 1000000000 and minPrice != 0 or maxPrice != 0 or equipements_id != []):
+            res = filter(lambda parking: self.applyFilter(parking, {
+                'minDistance': int(minDistance),
+                'maxDistance': int(maxDistance),
+                'minPrice': int(minPrice),
+                'maxPrice': int(maxPrice),
+                'equipements_id': equipements_id
+            }), parkings)
+        return Response(res)
+
+    def applyFilter(self,parking, filters):
+        try:
+            distance = int(parking['routeInfo']['walkingDistance'])
+            minPrice = filters['minPrice']
+            maxPrice = filters['maxPrice']
+            equipements = filters['equipements_id']
+            hasPrice = False
+            if filters['minDistance'] <= distance <= filters['maxDistance']:
+                for tarif in parking['tarifs']:
+                    price=int(tarif['prix'])
+                    if minPrice <= price <= maxPrice:
+                        hasPrice = True
+                if hasPrice:
+                    hasAllEquip = True
+                    for equip in equipements:
+                        hasEquip=False
+                        for equipPark in parking['equipements']:
+                            if int(equipPark['idEquipement'])==int(equip):
+                                hasEquip=True
+                        if (hasEquip==False):
+                            hasAllEquip=False
+                    if hasAllEquip:
+                        return True
+                    else:
+                        return False
+                else:
+                    return False
+            else:
+                return False
+        except Exception:
+            return True
