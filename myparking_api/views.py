@@ -758,7 +758,8 @@ class TestParkingView(viewsets.ModelViewSet):
             #if mode1 il utilise variable globale fiha (300*100) maderthach f bdd psk pour les tests berk
             #if mod=2 yraj2 ga3 les arpkings
             (queryParkings,ids,weights) =getTestRecommandations(int(request.query_params['automobiliste']),int(mode))
-            #apres ma yradj2 il filtre
+            #apres ma yradj2 il filtredjat error wrili le bulk machin plz hhhh no mechi update li prbo look
+            #asebri rani nwerilek
             try:
                 start = request.query_params['start']
             except Exception:
@@ -772,8 +773,10 @@ class TestParkingView(viewsets.ModelViewSet):
             parkings = ParkingSerializer(queryParkings, many=True, context={
                 'request': request, }).data
             # copy it melhih wher e?
-            res = parkings.sort(key=lambda p: weights[ids.index(p['idParking'])]) # c bon sah? hhhoui truni? att k
-
+            if(mode<2):
+                res = parkings.sort(key=lambda p: weights[ids.index(p['idParking'])]) # c bon sah? hhhoui truni? att k
+            else:
+                res = parkings
 
         except Parking.DoesNotExist:
             raise Http404
@@ -806,10 +809,10 @@ class TestParkingView(viewsets.ModelViewSet):
         print(minDistance, maxDistance, minPrice, maxPrice, equipements_id)
         if (minDistance != 0 or maxDistance != 1000000000 and minPrice != 0 or maxPrice != 0 or equipements_id != []):
             res = filter(lambda parking: self.applyFilter(parking, {
-                'minDistance': int(minDistance),
-                'maxDistance': int(maxDistance),
-                'minPrice': int(minPrice),
-                'maxPrice': int(maxPrice),
+                'minDistance': int(float(minDistance)),
+                'maxDistance': int(float(maxDistance)),
+                'minPrice': int(float(minPrice)),
+                'maxPrice': int(float(maxPrice)),
                 'equipements_id': equipements_id
             }), parkings)
         return Response(res)

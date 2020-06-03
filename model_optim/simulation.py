@@ -1,3 +1,4 @@
+import json
 import os
 import random
 import math
@@ -11,7 +12,7 @@ import numpy as np
 import psutil as psutil
 
 import requests
-from django.db.models import F
+from django.db.models import F, ExpressionWrapper, IntegerField, Value
 from model_optim.forSimulationOnly import optimizeWithoutClustering
 from model_optim.helpers.simulationData import generateNearbyGPSPosition
 
@@ -23,7 +24,9 @@ def generateRandomFiltersValues():
     min_distance = np.random.uniform(MIN_DISTANCE, MIN_DISTANCE + 200)  # min entre 50 and 250 meters
     max_distance = np.random.uniform(MAX_DISTANCE - 200, MAX_DISTANCE)  # min entre 800 and 1000 meters
     equipements_ids = random.sample(equipements_in_bdd, k=random.randrange(1, 9))
-    return min_prix, max_prix, min_distance, max_distance, equipements_ids
+    equipements_ids_str = ",".join(map(str, equipements_ids))
+    print(equipements_ids_str)
+    return min_prix, max_prix, min_distance, max_distance, equipements_ids_str
 
 
 # fhmni ebda wla maklah? fhmni l'essentiel
@@ -32,7 +35,7 @@ def generateRandomFiltersValues():
 def updateUserBDD(id_automobliste, new_position):
     # driver/updatePosition post [lat,long] this is it okey emb"d ki ndir all view calls ani ndirha
     print("updating automobiliste position using islam's route" + str(id_automobliste) + ' ' + str(new_position))
-    response = requests.post('http:/localhost:8000/driver/updateLocation', {
+    response = requests.post('http://127.0.0.1:8000/driver/updateLocation', {
         'driverId': int(id_automobliste),
         'lat': new_position[0],
         'long': new_position[1]
@@ -57,12 +60,12 @@ def getParkingOccupancyAvg():
 def requestParkings(id_automobiliste, depart, destination, min_price, max_price, min_distance, max_distance,
                     equipements,
                     mode):
-    response = requests.get('http://localhost:8000/getParkings', {
+    response = requests.get('http://127.0.0.1:8000/getParkings', {
         'mode': int(mode),
         'automobiliste': int(id_automobiliste),
         'start': depart,
         'destination': destination,
-        'minDistance': min_distance,
+        'minDistance': min_distance,  # i have a ida wh          stooppppppppppp dkika bb plzy
         'maxDistance': max_distance,
         'minPrice': min_price,
         'maxPrice': max_price,
@@ -84,9 +87,20 @@ def updateSelectedParkingInfo(idParking):
 
 
 def resetNBplacesLibres():
-    Parking.objects.all().update(nbPlacesLibres=random.randrange(0, F('nbPlaces')))
+    parkings = Parking.objects.all().values_list()
+    dataframe = pd.DataFrame.from_records(parkings,
+                                          columns=['ID', 'NB_ETAGE', 'NB_PLACES', 'NB_PLACES_LIBRES', '4', '5', '6',
+                                                   'LAT', 'LON', '9', '10', '11', '12', '13', '14'])
+    map(resetOneParking, dataframe.iloc)
 
 
+def resetOneParking(instance):
+    p = Parking.objects.get(id=instance['ID'])
+    p.nbPlacesLibres = random.randint(0, instance['NB_PLACES'])
+    p.save()
+
+
+# yeah honey ? aya nsiyoha f la console lhir hhhh bch hhhh sorry mechi bel3ani +est la souris
 # ni nhawes kifch ndirha for all instances 3la derba (bulk) okey bb thnx
 NB_USERS = 300
 NB_PARKINGS = 100
@@ -100,7 +114,7 @@ MAX_RAM = 100  # to fetch later
 
 
 def main(_lambda, _num_events, use_optimisation):
-    optimizeWithoutClustering()  # to prepare data for the seond mode (mode=1) c bo
+    # optimizeWithoutClustering()  # to prepare data for the seond mode (mode=1) c bo
     # asbr fkt prob, ki rana nupdatiw nb places libres, ana ncheckiw bli c logique? mchi kal m 0? decrementiw? wait dok n9olek
     process = psutil.Process(os.getpid())
 
@@ -140,21 +154,24 @@ def main(_lambda, _num_events, use_optimisation):
             user = list(Automobiliste.objects.all().values_list()[random.randrange(0, NB_USERS)])
             # if not (user_ids.__contains__(user[0])):
             user_info = user
+        # mchat djat another error oui en plus look hado float direct m bdd
         print("selected user " + str(user_info[0]))
+        print("hhhheyedoodl " + str(user_info[6]))  # run
         user_ids.append(user_info[0])  # id automobiliste
-        depart = generateNearbyGPSPosition(NEARBY_RADIUS, user_info[6][0], user_info[6][1])  # lat, lon
-        destination = generateNearbyGPSPosition(NEARBY_RADIUS, depart[0], depart[1])  # lat, lon
+        depart = generateNearbyGPSPosition(NEARBY_RADIUS, float(user_info[6][0]), float(user_info[6][1]))  # lat, lon
+        destination = generateNearbyGPSPosition(NEARBY_RADIUS, float(depart[0]), float(depart[1]))  # lat, lon
         prix_min, prix_max, distance_min, distance_max, equipements = generateRandomFiltersValues()
         updateUserBDD(id_automobliste=user_info[0], new_position=depart)
         # ih sah kbl wkil kunt nkhmm tht day hhh lol
         # fkt prob ha yji ki nruniw for requests more then 300
         # why ? att dkika pcq ani dyra hadi wkil nahiha
-
-        recommended = requestParkings(id_automobiliste=user_info[0], depart=depart, destination=destination,
-                                      min_price=prix_min,
-                                      max_price=prix_max,
-                                      min_distance=distance_min, max_distance=distance_max, equipements=equipements,
-                                      mode=use_optimisation)
+        # oui ? dir float hna
+        res_getparkigns = requestParkings(id_automobiliste=user_info[0], depart=depart, destination=destination,
+                                          min_price=prix_min,
+                                          max_price=prix_max,
+                                          min_distance=distance_min, max_distance=distance_max, equipements=equipements,
+                                          mode=use_optimisation)
+        recommended = json.loads(res_getparkigns.text)
         # this varibale is urs donow if it's an integer , it must be integer
         # it is integr w 3nha same values with same meanings
         current, peak = tracemalloc.get_traced_memory()
@@ -163,17 +180,18 @@ def main(_lambda, _num_events, use_optimisation):
             unsatisfied_users += 1
         else:
             # this
-            updateSelectedParkingInfo(idParking=recommended[0])  # best option , considering list is ordered
+            updateSelectedParkingInfo(
+                idParking=recommended[0]['idParking'])  # best option , considering list is ordered
 
         print("Automibliste number : " + str(
             i) + ' arrived  after ' + '%.2f' % _inter_event_time + ' - at time t0 + ' + "%.2f" % _event_time)
         # print('Request: id: ' + str(user_info[0]) + ' /start : ' + str(start) + ' /destination : ' + str(
         #     destination) + '/equipements : ' + str(
         #     equipements))
-        #print('\t\t prix in [{}, {}] distance in [{}, {}]'.format(prix_min, prix_max, distance_min, distance_max))
+        # print('\t\t prix in [{}, {}] distance in [{}, {}]'.format(prix_min, prix_max, distance_min, distance_max))
     stop = timeit.default_timer()
     print('Time of simulation : ', stop - start)
-    #print(f"Current Memroy usage for request is {current / 10 ** 6}MB; Peak was : {peak / 10 ** 6}MB")
+    # print(f"Current Memroy usage for request is {current / 10 ** 6}MB; Peak was : {peak / 10 ** 6}MB")
     tracemalloc.stop()
     ## plot time arrival for pfe paper
     # fig = plt.figure()
@@ -259,7 +277,7 @@ def main(_lambda, _num_events, use_optimisation):
 def plotting(data):
     """ genère  8 graphes en utilisant data"""
     labels = ['30', '100', '1000']
-    graph_labels = ['Optimisation & Clustering', 'Optimsation seulement', 'Pas d\'optimisation']
+    graph_labels = ['Optimisation & Clustering', 'Optimsation seulement']
     graph_titles = [
         'Taux moyen d\'utilisation de mémoire - Trafic léger',
         'Taux moyen d\'utilisation du CPU - Trafic léger',
@@ -276,13 +294,13 @@ def plotting(data):
     for index, title in enumerate(graph_titles):
         _case_1 = data[index][0:3]
         _case_2 = data[index][3:6]
-        _case_3 = data[index][6:9]
+        # _case_3 = data[index][6:9]
         x = np.arange(len(labels))  # the labels locations
         width = 0.175  # width of bars
         fig, ax = plt.subplots()
         rects1 = ax.bar(x - width / 2, _case_1, width, label=graph_labels[0])
         rects2 = ax.bar(x + width / 2, _case_2, width, label=graph_labels[1])
-        rects3 = ax.bar(x + 3 * width / 2, _case_3, width, label=graph_labels[2])
+        # rects3 = ax.bar(x + 3 * width / 2, _case_3, width, label=graph_labels[2])
 
         # Add some text for labels, title and custom x-axis tick labels, etc.
         ax.set_ylabel(yAxeLabels[index % 4])
@@ -344,10 +362,13 @@ if __name__ == '__main__':
 
     ## new process
     # simulation_data = [[""] * 4] * 8
-    simulation_data = [[0] * 9 for x in range(8)]
+    simulation_data = [[0] * 6 for x in range(8)]
     ratesOfArrival = [2, 5]
-    sampleSizes = [10, 30, 40]
-    methodsTested = [0, 1, 2]  # here are methods
+    sampleSizes = [10, 30, 40]  # wesbeiiiiiii ki cupitek me3tha habit n9olekhadja 9bel ma tbadli
+    # 3lech matkhlich three indices for methodes Testes and change oly the loop
+    # bech amtbdlich another things aka jini khir m3ich? ah ? kotlk haka bntli khir for me kol whd kichgykhmm babe
+    # okey kima habiti propistlek berk, thanx
+    methodsTested = [0, 1]  # here are methods
     for index_row, _lambda in enumerate(ratesOfArrival):
         for index_column, _sampleSize in enumerate(sampleSizes):
             for use_case in methodsTested:
@@ -355,15 +376,16 @@ if __name__ == '__main__':
                 ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, _sampleSize, use_case)
                 resetNBplacesLibres()
                 # tests ratios
-                # _ram_percentage = np.random.uniform(low=0.01, high=1)
-                # _uc_percentage = np.random.uniform(low=0.01, high=1)
-                # _occupancy_avg = np.random.uniform(low=0.01, high=1)
-                # _satisfaction_avg = np.random.uniform(low=0.01, high=1)
+                # ram_percentage = np.random.uniform(low=0.01, high=1)
+                # uc_percentage = np.random.uniform(low=0.01, high=1)
+                # occupancy_avg = np.random.uniform(low=0.01, high=1)
+                # satisfaction_avg = np.random.uniform(low=0.01, high=1)
                 simulation_data[index_row * 4][j] = ram_percentage
                 simulation_data[index_row * 4 + 1][j] = uc_percentage
                 simulation_data[index_row * 4 + 2][j] = occupancy_avg
                 simulation_data[index_row * 4 + 3][j] = satisfaction_avg
     print("this is simuationdata")
+
     print(simulation_data)
     plotting(simulation_data)
     # print(f"Current CPU usage ", process.cpu_percent(interval=None))

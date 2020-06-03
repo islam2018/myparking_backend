@@ -62,7 +62,7 @@ def getTestRecommandations(driverId, mode):
 
         return (Parking.objects.filter(id__in=parkings_id, nbPlacesLibres__gt=0), parkings_id, parking_weights)
     elif (mode == 2):
-        return Parking.objects.all()
+        return (Parking.objects.filter(nbPlacesLibres__gt=0),[],[])
 
 
 NP = 0

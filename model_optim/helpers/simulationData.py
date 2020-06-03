@@ -250,9 +250,19 @@ def generateNearbyGPSPosition(r, lat, lon):  # using a uniform random distributi
     v = np.random.uniform(low=0, high=1)
     w = r / meters_in_one_degree_equator * np.sqrt(u)
     t = 2 * np.pi * v
-    x = w * np.cos(t)
+    x = w * np.cos(t) # what ? att ndiro kima ana nhb ndir hh
     y = w * np.sin(t)
-    return [lat + x / np.cos(lon), lon + y]
+    print("heeeeerr", str(lon)+" "+str(lat)) # babe look pleaz
+    # look cos mahoch yredj3 float d9i9a ni n9olek hadja, plz look yradje3 nd array not float
+    return [lat + x / np.cos(lon), lon + y]  # itried float mais same thing att dok nhws dikika ff hh
+    # wait hamlik raho khlas so wehc habiti t9oli ? wch ah? hadmoulah et toi,?lol
+# kotlk wch rahhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+# rah mlih lol
+# islam testit haka b str? not yet
+
+# write her u waa say somehing ? ni nhws ki nkml nhws nji oki nsiyi this bidma
+# ouii ?i dir print te3 lon and lok kunt nktb couptini chft lol sorry chft bli not my fault thb jwb ghhhh
+# lmofid kotlk
 
 
 def main():
