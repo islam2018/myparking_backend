@@ -9,8 +9,10 @@ import tracemalloc
 import matplotlib.pyplot as plt
 import numpy as np
 import psutil as psutil
-import requests
 
+import requests
+from django.db.models import F
+from model_optim.forSimulationOnly import optimizeWithoutClustering
 from model_optim.helpers.simulationData import generateNearbyGPSPosition
 
 
@@ -24,21 +26,38 @@ def generateRandomFiltersValues():
     return min_prix, max_prix, min_distance, max_distance, equipements_ids
 
 
+# fhmni ebda wla maklah? fhmni l'essentiel
+# ah win raakaaa raiii hna conex so look had l afnoctio bayna it updates only gs
+# hadi win raki t3aytliha *,?
 def updateUserBDD(id_automobliste, new_position):
     # driver/updatePosition post [lat,long] this is it okey emb"d ki ndir all view calls ani ndirha
     print("updating automobiliste position using islam's route" + str(id_automobliste) + ' ' + str(new_position))
-    response = requests.post('/driver/updateLocation',{
+    response = requests.post('http:/localhost:8000/driver/updateLocation', {
         'driverId': int(id_automobliste),
-        'lat' : new_position[0],
-        'long' : new_position[1]
+        'lat': new_position[0],
+        'long': new_position[1]
     })
     print(response)
 
 
+def getParkingOccupancyAvg():
+    parkings_q = Parking.objects.all().values_list()
+    parking_list = pd.DataFrame.from_records(parkings_q,
+                                             columns=['ID', 'NB_ETAGE', 'NB_PLACES', 'NB_PLACES_LIBRES', '4', '5', '6',
+                                                      'LAT', 'LON', '9', '10', '11', '12', '13', '14'])
+    parking_list['parking_occupancy_rate'] = parking_list.apply(
+        lambda row: (row.NB_PLACES - row.NB_PLACES_LIBRES) / row.NB_PLACES, axis=1)
+    return parking_list['parking_occupancy_rate'].mean()
 
-def requestParkings(id_automobiliste, depart, destination, min_price, max_price, min_distance, max_distance, equipements,
+
+# nroho l debut ga3 , kayen 3 modes,
+# kayen an url li ymedlna la liste des parkings neb
+# i know hadi ana drtha kml fhmni ani fhma hat ldok
+# hein loook
+def requestParkings(id_automobiliste, depart, destination, min_price, max_price, min_distance, max_distance,
+                    equipements,
                     mode):
-    response = requests.get('/getParkings', {
+    response = requests.get('http://localhost:8000/getParkings', {
         'mode': int(mode),
         'automobiliste': int(id_automobiliste),
         'start': depart,
@@ -49,17 +68,26 @@ def requestParkings(id_automobiliste, depart, destination, min_price, max_price,
         'maxPrice': max_price,
         'equipements': equipements
     })
+    # ih mala kmlt fhmtni hada? haka? ya islamerwh hna
+    # oui babe
+    # wht? aya nkmlo
+    # bon 9otlek hadi berk dir an api request (kima derna f postman) with this mode
     return response
-
 
 
 def updateSelectedParkingInfo(idParking):
     parking = Parking.objects.get(id=idParking)
-    parking.nbPlacesLibres= parking.nbPlacesLibres-1
-    parking.save()
+    if (parking.nbPlacesLibres > 0):  # cbon
+        parking.nbPlacesLibres = parking.nbPlacesLibres - 1
+        parking.save()
     # update nb places --
 
 
+def resetNBplacesLibres():
+    Parking.objects.all().update(nbPlacesLibres=random.randrange(0, F('nbPlaces')))
+
+
+# ni nhawes kifch ndirha for all instances 3la derba (bulk) okey bb thnx
 NB_USERS = 300
 NB_PARKINGS = 100
 NEARBY_RADIUS = 3000  # 3 km
@@ -68,10 +96,19 @@ MIN_PRICE = 10
 MAX_PRICE = 200
 MIN_DISTANCE = 20  # 20 meters of walking
 MAX_DISTANCE = 1000
+MAX_RAM = 100  # to fetch later
 
 
 def main(_lambda, _num_events, use_optimisation):
+    optimizeWithoutClustering()  # to prepare data for the seond mode (mode=1) c bo
+    # asbr fkt prob, ki rana nupdatiw nb places libres, ana ncheckiw bli c logique? mchi kal m 0? decrementiw? wait dok n9olek
+    process = psutil.Process(os.getpid())
+
+    process.cpu_percent(interval=None)
+
     tracemalloc.start()  # to track memory usage
+
+    # chft berk bli they us this after calling this
     _event_num = []
     _inter_event_times = []  # time between requests to wait tht time
     _event_times = []
@@ -94,29 +131,32 @@ def main(_lambda, _num_events, use_optimisation):
         _event_time = _event_time + _inter_event_time
         _event_times.append(_event_time)
 
-        # wait generated inter_event_time before genrating next request
-        # i wait tht time here
+        #
         # time.sleep(_inter_event_time)
         # get a random user
         # hna i select a user id randomly
         user_info = None
         while user_info is None:
             user = list(Automobiliste.objects.all().values_list()[random.randrange(0, NB_USERS)])
-            if not (user_ids.__contains__(user[0])):
-                user_info = user
+            # if not (user_ids.__contains__(user[0])):
+            user_info = user
         print("selected user " + str(user_info[0]))
         user_ids.append(user_info[0])  # id automobiliste
         depart = generateNearbyGPSPosition(NEARBY_RADIUS, user_info[6][0], user_info[6][1])  # lat, lon
         destination = generateNearbyGPSPosition(NEARBY_RADIUS, depart[0], depart[1])  # lat, lon
         prix_min, prix_max, distance_min, distance_max, equipements = generateRandomFiltersValues()
         updateUserBDD(id_automobliste=user_info[0], new_position=depart)
+        # ih sah kbl wkil kunt nkhmm tht day hhh lol
+        # fkt prob ha yji ki nruniw for requests more then 300
+        # why ? att dkika pcq ani dyra hadi wkil nahiha
 
         recommended = requestParkings(id_automobiliste=user_info[0], depart=depart, destination=destination,
                                       min_price=prix_min,
                                       max_price=prix_max,
                                       min_distance=distance_min, max_distance=distance_max, equipements=equipements,
                                       mode=use_optimisation)
-
+        # this varibale is urs donow if it's an integer , it must be integer
+        # it is integr w 3nha same values with same meanings
         current, peak = tracemalloc.get_traced_memory()
 
         if not recommended:  # empty
@@ -127,13 +167,13 @@ def main(_lambda, _num_events, use_optimisation):
 
         print("Automibliste number : " + str(
             i) + ' arrived  after ' + '%.2f' % _inter_event_time + ' - at time t0 + ' + "%.2f" % _event_time)
-        print('Request: id: ' + str(user_info[0]) + ' /start : ' + str(start) + ' /destination : ' + str(
-            destination) + '/equipements : ' + str(
-            equipements))
-        print('\t\t prix in [{}, {}] distance in [{}, {}]'.format(prix_min, prix_max, distance_min, distance_max))
+        # print('Request: id: ' + str(user_info[0]) + ' /start : ' + str(start) + ' /destination : ' + str(
+        #     destination) + '/equipements : ' + str(
+        #     equipements))
+        #print('\t\t prix in [{}, {}] distance in [{}, {}]'.format(prix_min, prix_max, distance_min, distance_max))
     stop = timeit.default_timer()
     print('Time of simulation : ', stop - start)
-    print(f"Current Memroy usage for request is {current / 10 ** 6}MB; Peak was : {peak / 10 ** 6}MB")
+    #print(f"Current Memroy usage for request is {current / 10 ** 6}MB; Peak was : {peak / 10 ** 6}MB")
     tracemalloc.stop()
     ## plot time arrival for pfe paper
     # fig = plt.figure()
@@ -149,10 +189,19 @@ def main(_lambda, _num_events, use_optimisation):
     # _uc_percentage = "UC " + str(_lambda) + "," + str(_num_events) + "," + str(use_case)
     # _occupancy_avg = "Occ " + str(_lambda) + "," + str(_num_events) + "," + str(use_case)
     # _satisfaction_avg = "Sat " + str(_lambda) + "," + str(_num_events) + "," + str(use_case)
-    _ram_percentage = np.random.uniform(low=0.01, high=1)
-    _uc_percentage = np.random.uniform(low=0.01, high=1)
-    _occupancy_avg = random.randrange(1, 100)
-    _satisfaction_avg = random.randrange(1, _num_events)
+    # each run of the main test hadi lzm trj3 those 4 ratios; doka ni dyrthom fake
+    # lzm t3rf bli main run c pour un triplet (rate, size, method)
+    # ok? nwjdo hado kbl i think
+    # deja kunt mwjda number of unsatified users for this
+    # doka mm those lzm nmrohom w nhsbohom
+    # maraich nefham (hado entrée wela sorit sorttiiie rani en fin de fonction main
+    # saha ila soritie what u mean by twejdhiom ? tmedlihom des valeurs ou koi ?
+    # haka rahom fake ,z3ma bch nhsb satisfaction ration drt la variable unsatisifed usrs w incremetniha a chque fois ykun tableau fargh te3 recomeded
+    # w memeoire tan wjdt kifch teths b maloc att nwrilk
+    _ram_percentage = (current / 10 ** 6) / MAX_RAM
+    _uc_percentage = process.cpu_percent(interval=None)
+    _occupancy_avg = getParkingOccupancyAvg()
+    _satisfaction_avg = unsatisfied_users / _num_events
     return _ram_percentage, _uc_percentage, _occupancy_avg, _satisfaction_avg
 
 
@@ -282,38 +331,39 @@ if __name__ == '__main__':
     from myparking_api.models import Parking, Automobiliste
     import pandas as pd
 
-    process = psutil.Process(os.getpid())
-
+    # wht
     # results_for_plots = pd.DataFrame(
     #     data={'30': [0, 0, 0, 0], '100': [0, 0, 0, 0], '1000': [0, 0, 0, 0]})  # 4 rows for the 4 graphs
     # rateOfArrival = 5  # average number of automobliste in 1 h, can be heigher for heavier traffic
     # numberOfRequests = 100  # number of requests
     # use_optim = True  # use optimisation algorithmes
     # main(rateOfArrival, numberOfRequests, use_optim)
-    # print(f"Current CPU usage ", process.cpu_percent())
+    # this but mdli 0% wkil ki kan data sghir? hhhman 3rf
+    print(f"Current CPU usage ", )
     # plotting()  # using plots for results
 
     ## new process
     # simulation_data = [[""] * 4] * 8
     simulation_data = [[0] * 9 for x in range(8)]
-    ratesOfArrival = [2, 10]
-    sampleSizes = [10, 30, 50]
-    methodsTested = [0, 1, 2]
+    ratesOfArrival = [2, 5]
+    sampleSizes = [10, 30, 40]
+    methodsTested = [0, 1, 2]  # here are methods
     for index_row, _lambda in enumerate(ratesOfArrival):
         for index_column, _sampleSize in enumerate(sampleSizes):
             for use_case in methodsTested:
                 j = index_column + 3 * use_case
-                # ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, _sampleSize, use_case)
+                ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, _sampleSize, use_case)
+                resetNBplacesLibres()
                 # tests ratios
-                _ram_percentage = np.random.uniform(low=0.01, high=1)
-                _uc_percentage = np.random.uniform(low=0.01, high=1)
-                _occupancy_avg =  np.random.uniform(low=0.01, high=1)
-                _satisfaction_avg =  np.random.uniform(low=0.01, high=1)
-                simulation_data[index_row * 4][j] = _ram_percentage
-                simulation_data[index_row * 4 + 1][j] = _uc_percentage
-                simulation_data[index_row * 4 + 2][j] = _occupancy_avg
-                simulation_data[index_row * 4 + 3][j] = _satisfaction_avg
+                # _ram_percentage = np.random.uniform(low=0.01, high=1)
+                # _uc_percentage = np.random.uniform(low=0.01, high=1)
+                # _occupancy_avg = np.random.uniform(low=0.01, high=1)
+                # _satisfaction_avg = np.random.uniform(low=0.01, high=1)
+                simulation_data[index_row * 4][j] = ram_percentage
+                simulation_data[index_row * 4 + 1][j] = uc_percentage
+                simulation_data[index_row * 4 + 2][j] = occupancy_avg
+                simulation_data[index_row * 4 + 3][j] = satisfaction_avg
     print("this is simuationdata")
     print(simulation_data)
     plotting(simulation_data)
-    print(f"Current CPU usage ", process.cpu_percent())
+    # print(f"Current CPU usage ", process.cpu_percent(interval=None))

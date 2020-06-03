@@ -198,7 +198,7 @@ class Porposition(models.Model):
     idProposition = models.AutoField(primary_key=True)
     automobiliste = models.ForeignKey(to=Automobiliste, on_delete=models.CASCADE)
     parking = models.ForeignKey(to=Parking, on_delete=models.CASCADE)
-    value = models.IntegerField(default=0)
+    value = models.FloatField(default=0)
 
     @property
     def idProposition(self):

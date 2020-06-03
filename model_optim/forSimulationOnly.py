@@ -1,20 +1,23 @@
-
 '''FOR SIMULATION ONLY'''
 import pandas as pd
+from django.db.models import Case, When
 from mip import minimize, xsum, OptimizationStatus, Model, BINARY
 
 from model_optim import getParkingClusters, assignToClusters
 from model_optim.helpers.calculateDistance import calculateDistanceMatrix
-from model_optim.persistance import  getReservations
+from model_optim.persistance import getReservations
 from myparking_api.models import Cluster, Parking, Automobiliste, Reservation, Porposition
 import numpy as np
 
-mDataframe =None
+mDataframe = None
 mUsers = None
 mAffectations = None
 
+
+# this a new function (new file from me) oe=key okey hna li lazem teb3ini
 def getTestRecommandations(driverId, mode):
-    if (mode==0):
+    if (mode == 0):  # there is 3 modes first it searches for parkings using clusters et tout (like the app) okey ?
+        # okey
         query = Cluster.objects.filter(drivers=driverId).values_list()
         clusters = pd.DataFrame.from_records(query,
                                              columns=['idCluster', 'label', 'centroid', 'reservations', 'parkings',
@@ -23,29 +26,52 @@ def getTestRecommandations(driverId, mode):
         cluster = clusters.iloc[0]
         propositions_ids = list(cluster['propositions'])
         print("automobilistId", driverId, propositions_ids)
+        # dir order f la requete nn?  sorry machefht
         queryProp = Porposition.objects.filter(id__in=propositions_ids, automobiliste_id=driverId).values_list()
+        #         ma n3rfchc jamais drtha  # yek haka superierue a? hhhh m stupid daymen >0
+        # haka? ordre contraire zedt - ah oe=key thnx jamaois drtha
+        # met toop att dkika nchof haja   mazel f l'autre  cas
         propositions = pd.DataFrame.from_records(queryProp,
                                                  columns=['idProposition', 'automobiliste', 'parking', 'value'])
-        parking_ids = propositions['parking'].to_list()
-        print(parking_ids)
-        return Parking.objects.filter(id__in=parking_ids)
-    elif (mode==1):
+        # i have a question u here?
+        # cc oui ? hna f next steps yak tgardi l'ordre? what u mean next steps oui okey aya fhmni next case dok
         parkings_id = []
+        parking_weights = []
+        for proposition in propositions.iloc:  # ak sur m la selection de donnes? oui oui
+            parkings_id.append(proposition['parking'])
+            parking_weights.append(proposition['value'])
+        # babe i need ur helphere kifech djib 2colns no wher? wkil haka att i check
+        print(parkings_id) # mchi hna f optimize ani nhdr f update parking data , iknow mais
+        return (Parking.objects.filter(id__in=parkings_id, nbPlacesLibres__gt=0), parkings_id, parking_weights)
+    elif (
+            mode == 1):
+        # wait ndirlekr resume
+
+        parkings_id = []
+        parking_weights = []
         array = np.asarray(mAffectations)
         for ix, iy in np.ndindex(array.shape):
             idParking = mDataframe.iloc[iy]['ID']
             idAutomobiliste = mUsers.iloc[ix]['idAutomobiliste']
-            if (int(idAutomobiliste) == int(driverId) and array[ix, iy] == 1):
+            if (int(idAutomobiliste) == int(driverId) and array[
+                ix, iy] > 0):  # mm hna we have to sort the list mz ma fhmtni hadi ki tfhmna nsgmoha att
                 parkings_id.append(idParking)
+                parking_weights.append(array[ix, iy])
                 print("idParking added", idParking)
-        return Parking.objects.filter(id__in=parkings_id)
-    elif (mode==2):
-        return Parking.objects.all()
+        # bb b"thom separe w khls at
 
+        return (Parking.objects.filter(id__in=parkings_id, nbPlacesLibres__gt=0), parkings_id, parking_weights)
+    elif (mode == 2):
+        return Parking.objects.all()
 
 
 NP = 0
 NU = 0
+
+
+# fahmek hadi 9bel , look this foction , optimize for all users and parkings , sans slusteing,
+# kima li rana nsagmo fiha berk sans custerig look, fhamti ? yeah babe, mala lzm nsgmo hadi tan?oui of cours
+
 def optimizeWithoutClustering():
     global NP
     global NU
@@ -54,19 +80,21 @@ def optimizeWithoutClustering():
     global mAffectations
 
     queryParkings = Parking.objects.all().values_list()
-    dataframe = pd.DataFrame.from_records(queryParkings,columns=['ID','NB_ETAGE','NB_PLACES','NB_PLACES_LIBRES','4','5','6','LAT','LON','9','10','11','12','13','14'])
+    dataframe = pd.DataFrame.from_records(queryParkings,
+                                          columns=['ID', 'NB_ETAGE', 'NB_PLACES', 'NB_PLACES_LIBRES', '4', '5', '6',
+                                                   'LAT', 'LON', '9', '10', '11', '12', '13', '14'])
     print(dataframe)
-    #filtered = parkingsInRadius(dataframe, center)
+    # filtered = parkingsInRadius(dataframe, center)
 
     queryUsers = Automobiliste.objects.all().values_list()
     users = pd.DataFrame.from_records(queryUsers,
-                                     columns=['idAutomobiliste', 'compte', 'idCompte', 'nom', 'numTel',
-                                              'prenom', 'position', 'auth', 'favoris'])
+                                      columns=['idAutomobiliste', 'compte', 'idCompte', 'nom', 'numTel',
+                                               'prenom', 'position', 'auth', 'favoris'])
     print(users)
     NU = len(users)
     NP = len(dataframe)
 
-    DISTANCES = calculateDistanceMatrix(dataframe,users)
+    DISTANCES = calculateDistanceMatrix(dataframe, users)
     print(DISTANCES)
 
     RESERV = getReservationsWithoutClusters(dataframe, users)
@@ -92,10 +120,14 @@ def optimizeWithoutClustering():
         # print(r['i'], r['j'])
         model += x[r['i']][r['j']] == 1
 
-    #       '
+    #   ahbsss win jbth hadi
+    #   hdi lkdima '
+    matrix_cout = [[F(dataframe, DISTANCES, i, j) for j in range(NP)] for i
+                   in range(NU)]
+    # each parking has enough space
     for j in range(NP):
-        # print('libre ', dataframe.iloc[j]['NB_PLACES_LIBRES'])
-        model += xsum(x[i][j] for i in range(NU)) <= int(dataframe.iloc[j]['NB_PLACES_LIBRES'])
+        model += xsum(x[i][j] if (min(matrix_cout[i]) == matrix_cout[i][j]) else 0 for i in range(NU)) <= int(
+            dataframe.iloc[j]['NB_PLACES_LIBRES'])  # haka? oui thnx i mean f wch lunt dir oui
 
     # for i in range(NU):
     #     model += xsum(x[i][j] for j in range(NP)) >= 1
@@ -111,7 +143,7 @@ def optimizeWithoutClustering():
     if status == OptimizationStatus.OPTIMAL or status == OptimizationStatus.FEASIBLE:
         for user in range(NU):
             for parking in range(NP):
-                affectations[parking][user] = x[user][parking].x
+                affectations[parking][user] = x[user][parking].x * matrix_cout[user][parking]
         for v in model.vars:
             answer += '{} : {}\n'.format(v.name, v.x)
             # print(v.name + " " + str(v.x))
@@ -130,18 +162,22 @@ def SommeDist(D, i):
         somme = somme + D[i][j]
     return somme
 
-def TauxDisp(dataframe, j):
-    return dataframe.iloc[j]['NB_PLACES_LIBRES'] / dataframe.iloc[j]['NB_PLACES']
 
-def F(dataframe, D, i, j ):
+def TauxDisp(dataframe, j):
+    # u said hadi ? yeah w att wkli kayn max te3 column f dataframe t'es sur haka ? nn dok nconfirmi f la console
+    max_nb = int(dataframe.max(0).loc['NB_PLACES'])  # asbr ani chaka f axis khls hadk howa
+    # att we test ur ordering mehtod ki nas tan
+    return dataframe.iloc[j]['NB_PLACES_LIBRES'] / max_nb  # yak kolna we use max mmm sah
+
+
+def F(dataframe, D, i, j):
     val = 0.5 * (D[i][j] / SommeDist(D, i)) + 0.5 * (1 - TauxDisp(dataframe, j))
-    print("cou",val)
+    print("cou", val)
     # print("F" + str(i) + "," + str(j) + " : " + str(val))
-    return val**2
+    return val ** 2
 
 
 def getReservationsWithoutClusters(dataframe, users):
-
     reservations = Reservation.objects.all().values_list()
     reservations_array = np.asarray(reservations)
     RESERV = []
@@ -151,7 +187,7 @@ def getReservationsWithoutClusters(dataframe, users):
         try:
             i = dataframe.loc[dataframe['ID'] == res[12]].index[0]
             j = users.loc[users['idAutomobiliste'] == res[13]].index[0]
-            print(i,j, 'ij indexex parking user for reserv')
+            print(i, j, 'ij indexex parking user for reserv')
             RESERV.append({
                 'i': i,
                 'j': j
@@ -161,3 +197,4 @@ def getReservationsWithoutClusters(dataframe, users):
             pass
 
     return RESERV
+# chehal tk3d hakak? 3 or 4 linutes okey

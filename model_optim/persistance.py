@@ -49,8 +49,9 @@ def saveAffectations(dataframe, users, affectations, idCluster):
     for ix,iy in np.ndindex(array.shape):
         idParking = dataframe.iloc[iy]['ID']
         idAutomobiliste = users.iloc[ix]['idAutomobiliste']
-        if (int(array[ix,iy])==1):
-            proposition = Porposition(automobiliste_id=idAutomobiliste, parking_id=idParking, value=array[ix,iy])
+        if (array[ix,iy]>0):  #stupid ana
+            proposition = Porposition(automobiliste_id=idAutomobiliste, parking_id=idParking,
+                                      value=array[ix,iy]) # c bon, kifch nordoniwhom?
             proposition.save()
             props_id.append(proposition.id)
     cluster.propositions_id = props_id

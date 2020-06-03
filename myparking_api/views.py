@@ -67,7 +67,7 @@ class ParkingView(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         try:
-            queryParkings = getRecomendedParkings(request.query_params['automobiliste'])
+            (queryParkings,ids,weights) = getRecomendedParkings(request.query_params['automobiliste'])
 
             try:
                 start = request.query_params['start']
@@ -83,7 +83,8 @@ class ParkingView(viewsets.ModelViewSet):
             parkings = ParkingSerializer(queryParkings, many=True, context={
                 'request': request, 'walkingData': walkingData,
                 'travelData': travelData}).data
-            res = parkings
+            res = parkings.sort(key=lambda p: weights[ids.index(p['idParking'])]) # c bon sah? hhhoui truni? att k
+
 
 
         except Parking.DoesNotExist:
@@ -752,8 +753,12 @@ class TestParkingView(viewsets.ModelViewSet):
         try:
             mode = int(request.query_params['mode'])
             print(mode)
-            queryParkings =getTestRecommandations(int(request.query_params['automobiliste']),int(mode))
-
+            #hadi the view ndjibo recommadntaions,
+            #if mode=0 il utilise l'objet propositons(f la bdd)
+            #if mode1 il utilise variable globale fiha (300*100) maderthach f bdd psk pour les tests berk
+            #if mod=2 yraj2 ga3 les arpkings
+            (queryParkings,ids,weights) =getTestRecommandations(int(request.query_params['automobiliste']),int(mode))
+            #apres ma yradj2 il filtre
             try:
                 start = request.query_params['start']
             except Exception:
@@ -763,15 +768,21 @@ class TestParkingView(viewsets.ModelViewSet):
             except Exception:
                 destination = None
             #(travelData, walkingData) = calculateRouteInfo(queryParkings, start, destination)
-
+            # hadi 9otlek dertha en comment bech mayehsbch routeIfo
             parkings = ParkingSerializer(queryParkings, many=True, context={
                 'request': request, }).data
-            res = parkings
+            # copy it melhih wher e?
+            res = parkings.sort(key=lambda p: weights[ids.index(p['idParking'])]) # c bon sah? hhhoui truni? att k
 
 
         except Parking.DoesNotExist:
             raise Http404
-
+        # hna il filtre pour min , max ,etx fhamti ,? les filtres fdhmt , mzlha mkltni start and destination kichghol ma rahmch used
+        # f our tests, sah rana we update them later, but comme each user rah ydir one request ma kch fyada nn?
+        # mefhatmch bsah m bekri kona using berk his positino, psk amdakhlnahc destiantion fl modele
+        # ahhhh sah? oui 9olna ndakhloha mais ma3refnach (koa mazel ma kheana bien), mais f clustring it's using his positon, li rahi
+        #f la bdd and it's updated a, mala lzm w uodate la bdd b the random positions kbl ma nruniw request
+        #raki dayertha ani dyrtha kbel?o
         try:
             minDistance = request.query_params['minDistance']
         except Exception:
