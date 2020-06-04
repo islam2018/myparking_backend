@@ -114,7 +114,7 @@ MAX_RAM = 100  # to fetch later
 
 
 def main(_lambda, _num_events, use_optimisation):
-    # optimizeWithoutClustering()  # to prepare data for the seond mode (mode=1) c bo
+    # to prepare data for the seond mode (mode=1) c bo
     # asbr fkt prob, ki rana nupdatiw nb places libres, ana ncheckiw bli c logique? mchi kal m 0? decrementiw? wait dok n9olek
     process = psutil.Process(os.getpid())
 
@@ -276,7 +276,7 @@ def main(_lambda, _num_events, use_optimisation):
 
 def plotting(data):
     """ genère  8 graphes en utilisant data"""
-    labels = ['30', '100', '1000']
+    labels = ['10', '40', '100'] # write here babe, kima kotlk madam ha nruniw 3ndna o
     graph_labels = ['Optimisation & Clustering', 'Optimsation seulement']
     graph_titles = [
         'Taux moyen d\'utilisation de mémoire - Trafic léger',
@@ -310,8 +310,9 @@ def plotting(data):
         ax.legend()
 
         fig.tight_layout()
-
-        plt.show()
+        # hada wech zedti berk ? yeah att ntesitw les graph fast
+        plt.savefig(f'test_results/{index}')
+       # plt.show()
 
     # _light_traffic_ram_case_0 = data[0][0:3]
     # _light_traffic_ram_case_1 = data[0][3:6]
@@ -364,17 +365,18 @@ if __name__ == '__main__':
     # simulation_data = [[""] * 4] * 8
     simulation_data = [[0] * 6 for x in range(8)]
     ratesOfArrival = [2, 5]
-    sampleSizes = [10, 30, 40]  # wesbeiiiiiii ki cupitek me3tha habit n9olekhadja 9bel ma tbadli
+    sampleSizes = [10, 40, 100]  # wesbeiiiiiii ki cupitek me3tha habit n9olekhadja 9bel ma tbadli
     # 3lech matkhlich three indices for methodes Testes and change oly the loop
     # bech amtbdlich another things aka jini khir m3ich? ah ? kotlk haka bntli khir for me kol whd kichgykhmm babe
-    # okey kima habiti propistlek berk, thanx
+    # okey kima habiti propistlek berk, thanx a piiiii khchina chabin
+    # so
     methodsTested = [0, 1]  # here are methods
     for index_row, _lambda in enumerate(ratesOfArrival):
         for index_column, _sampleSize in enumerate(sampleSizes):
             for use_case in methodsTested:
                 j = index_column + 3 * use_case
                 ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, _sampleSize, use_case)
-                resetNBplacesLibres()
+
                 # tests ratios
                 # ram_percentage = np.random.uniform(low=0.01, high=1)
                 # uc_percentage = np.random.uniform(low=0.01, high=1)
@@ -384,6 +386,8 @@ if __name__ == '__main__':
                 simulation_data[index_row * 4 + 1][j] = uc_percentage
                 simulation_data[index_row * 4 + 2][j] = occupancy_avg
                 simulation_data[index_row * 4 + 3][j] = satisfaction_avg
+
+                resetNBplacesLibres()
     print("this is simuationdata")
 
     print(simulation_data)
