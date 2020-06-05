@@ -6,7 +6,10 @@ import threading
 import time
 import timeit
 import tracemalloc
-
+from io import BytesIO
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 import matplotlib.pyplot as plt
 import numpy as np
 import psutil
@@ -42,7 +45,7 @@ def generateRandomFiltersValues():
 
 def updateUserBDD(id_automobliste, new_position):
     print("updating automobiliste position using islam's route" + str(id_automobliste) + ' ' + str(new_position))
-    response = requests.post('http://127.0.0.1:8000/driver/updateLocation', {
+    response = requests.post('https://evaluataionmyparking.herokuapp.com/driver/updateLocation', {
         'driverId': int(id_automobliste),
         'lat': new_position[0],
         'long': new_position[1]
@@ -63,7 +66,7 @@ def getParkingOccupancyAvg():
 def requestParkings(id_automobiliste, depart, destination, min_price, max_price, min_distance, max_distance,
                     equipements,
                     mode):
-    response = requests.get('http://127.0.0.1:8000/getParkings', {
+    response = requests.get('https://evaluataionmyparking.herokuapp.com/getParkings', {
         'mode': int(mode),
         'automobiliste': int(id_automobiliste),
         'start': depart,
@@ -259,11 +262,21 @@ def plotting(data):
 
         fig.tight_layout()
         # hada wech zedti berk ? yeah att ntesitw les graph fast
-        plt.savefig(f'test_results/{index}')
+        # plt.savefig(f'test_results/{index}')
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png')
+        buffer.seek(0)
+        res = cloudinary.uploader.upload(buffer, folder='test_figures')
+        respons = requests.post("http://127.0.0.1/pusher/broadcast/driver/",{
+            'title': ' TEST: Evaluation et test',
+            'body': 'Results are plotted, check cloudinary',
+            'content': '',
+            'interest': 'drivers'
+        })
+        print(respons.text)
     # plt.show()
 
-
-if __name__ == '__main__':
+def main_test_fun():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myparking.settings')
     from django.core.wsgi import get_wsgi_application
 
@@ -287,36 +300,41 @@ if __name__ == '__main__':
                 memory_usage = []
                 uc_usage = []
                 unsatisfied_users = 0
-                ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, _sampleSize, use_case)
+               # ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, _sampleSize, use_case)
 
                 # tests ratios
-                # ram_percentage = np.random.uniform(low=0.01, high=1)
-                # uc_percentage = np.random.uniform(low=0.01, high=1)
-                # occupancy_avg = np.random.uniform(low=0.01, high=1)
-                # satisfaction_avg = np.random.uniform(low=0.01, high=1)
+                ram_percentage = np.random.uniform(low=0.01, high=1)
+                uc_percentage = np.random.uniform(low=0.01, high=1)
+                occupancy_avg = np.random.uniform(low=0.01, high=1)
+                satisfaction_avg = np.random.uniform(low=0.01, high=1)
                 simulation_data[index_row * 4][j] = ram_percentage
                 simulation_data[index_row * 4 + 1][j] = uc_percentage
                 simulation_data[index_row * 4 + 2][j] = occupancy_avg
                 simulation_data[index_row * 4 + 3][j] = satisfaction_avg
-                resetNBplacesLibres()
+                # resetNBplacesLibres()
         print("work for mode 2")
-        # ram_percentage = np.random.uniform(low=0.01, high=1)
-        # uc_percentage = np.random.uniform(low=0.01, high=1)
-        # occupancy_avg = np.random.uniform(low=0.01, high=1)
-        # satisfaction_avg = np.random.uniform(low=0.01, high=1)
+        ram_percentage = np.random.uniform(low=0.01, high=1)
+        uc_percentage = np.random.uniform(low=0.01, high=1)
+        occupancy_avg = np.random.uniform(low=0.01, high=1)
+        satisfaction_avg = np.random.uniform(low=0.01, high=1)
         memory_usage = []
         uc_usage = []
         unsatisfied_users = 0
-        ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, 100, 2)
+        # ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, 100, 2)
         for j in range(6, 9):
             simulation_data[index_row * 4][j] = ram_percentage
             simulation_data[index_row * 4 + 1][j] = uc_percentage
             simulation_data[index_row * 4 + 2][j] = occupancy_avg
             simulation_data[index_row * 4 + 3][j] = satisfaction_avg
-            resetNBplacesLibres()
+            # resetNBplacesLibres()
 
     print("this is simuationdata")
 
     print(simulation_data)
     plotting(simulation_data)
     # print(f"Current CPU usage ", process.cpu_percent(interval=None))
+
+# if __name__ == '__main__':
+#     main_test_fun()
+
+

@@ -1,8 +1,11 @@
+import threading
+from _thread import start_new_thread
 
 from django.urls import include, path
 
-from model_optim import runModel
+from model_optim import runModel, AFTER_SERVER_INIT
 from model_optim.forSimulationOnly import optimizeWithoutClustering
+from model_optim.simulation import main_test_fun
 from . import views
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -49,7 +52,7 @@ urlpatterns = [
 
 # Run the model after server is
 #runModel() # hna 3edna a model (clusters are prepared in database)
-optimizeWithoutClustering() #but here no so
+#optimizeWithoutClustering() #but here no so
 # i can't do small number lol
 # NU np WIN TNKSLHOM, mais f mode=1 it uses all ok
 #AFTER_SERVER_INIT()
