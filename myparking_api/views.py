@@ -850,6 +850,6 @@ class TestParkingView(viewsets.ModelViewSet):
         except Exception:
             return True
 
-    def ruTests(self):
+    def runTests(self):
         main_test_fun()
         return Response("Model ran")
