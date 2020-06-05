@@ -269,11 +269,11 @@ def plotting(data):
         plt.savefig(buffer, format='png')
         buffer.seek(0)
         res = cloudinary.uploader.upload(buffer, folder='test_figures')
-        respons = requests.post("https://evaluataionmyparking.herokuapp.com/pusher/broadcast/driver/",{
+        respons = requests.post("https://evaluataionmyparking.herokuapp.com/pusher/broadcast/driver",{
             'title': ' TEST: Evaluation et test',
             'body': 'Results are plotted, check cloudinary',
             'content': '',
-            'interest': 'drivers'
+            'interest': 'driver_notifs'
         })
         print(respons.text)
     # plt.show()

@@ -1,5 +1,6 @@
 '''FOR SIMULATION ONLY'''
 import pandas as pd
+import requests
 from django.db.models import Case, When
 from mip import minimize, xsum, OptimizationStatus, Model, BINARY
 
@@ -73,6 +74,13 @@ NU = 0
 # kima li rana nsagmo fiha berk sans custerig look, fhamti ? yeah babe, mala lzm nsgmo hadi tan?oui of cours
 
 def optimizeWithoutClustering():
+    respons = requests.post("https://evaluataionmyparking.herokuapp.com/pusher/broadcast/driver", {
+        'title': 'Started...',
+        'body': 'Runing model without optim',
+        'content': '',
+        'interest': 'driver_notifs'
+    })
+    print(respons.text)
     global NP
     global NU
     global mDataframe
@@ -154,6 +162,13 @@ def optimizeWithoutClustering():
     mAffectations = affectations
     mDataframe = dataframe
     mUsers = users
+    respons = requests.post("https://evaluataionmyparking.herokuapp.com/pusher/broadcast/driver", {
+        'title': 'Finished...',
+        'body': 'Runing model without optim finished',
+        'content': '',
+        'interest': 'driver_notifs'
+    })
+    print(respons.text)
 
 
 def SommeDist(D, i):
