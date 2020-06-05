@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 import psutil
 import requests
+
+from model_optim.forSimulationOnly import optimizeWithoutClustering
 from model_optim.helpers.simulationData import generateNearbyGPSPosition
 from myparking_api.models import Automobiliste, Parking
 
@@ -279,13 +281,14 @@ def plotting(data):
     # plt.show()
 
 def main_test_fun():
+
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myparking.settings')
     from django.core.wsgi import get_wsgi_application
 
     application = get_wsgi_application()
     from myparking_api.models import Parking, Automobiliste
     import pandas as pd
-
+    optimizeWithoutClustering()
     # new process
 
     mem = psutil.virtual_memory()
