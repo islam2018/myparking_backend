@@ -12,9 +12,11 @@ import cloudinary.uploader
 import cloudinary.api
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import psutil
 import requests
 from model_optim.helpers.simulationData import generateNearbyGPSPosition
+from myparking_api.models import Automobiliste, Parking
 
 
 class TestThread(threading.Thread):
@@ -267,7 +269,7 @@ def plotting(data):
         plt.savefig(buffer, format='png')
         buffer.seek(0)
         res = cloudinary.uploader.upload(buffer, folder='test_figures')
-        respons = requests.post("http://127.0.0.1/pusher/broadcast/driver/",{
+        respons = requests.post("https://evaluataionmyparking.herokuapp.com/pusher/broadcast/driver/",{
             'title': ' TEST: Evaluation et test',
             'body': 'Results are plotted, check cloudinary',
             'content': '',
@@ -300,33 +302,33 @@ def main_test_fun():
                 memory_usage = []
                 uc_usage = []
                 unsatisfied_users = 0
-               # ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, _sampleSize, use_case)
+                ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, _sampleSize, use_case)
 
                 # tests ratios
-                ram_percentage = np.random.uniform(low=0.01, high=1)
-                uc_percentage = np.random.uniform(low=0.01, high=1)
-                occupancy_avg = np.random.uniform(low=0.01, high=1)
-                satisfaction_avg = np.random.uniform(low=0.01, high=1)
+                # ram_percentage = np.random.uniform(low=0.01, high=1)
+                # uc_percentage = np.random.uniform(low=0.01, high=1)
+                # occupancy_avg = np.random.uniform(low=0.01, high=1)
+                # satisfaction_avg = np.random.uniform(low=0.01, high=1)
                 simulation_data[index_row * 4][j] = ram_percentage
                 simulation_data[index_row * 4 + 1][j] = uc_percentage
                 simulation_data[index_row * 4 + 2][j] = occupancy_avg
                 simulation_data[index_row * 4 + 3][j] = satisfaction_avg
-                # resetNBplacesLibres()
+                resetNBplacesLibres()
         print("work for mode 2")
-        ram_percentage = np.random.uniform(low=0.01, high=1)
-        uc_percentage = np.random.uniform(low=0.01, high=1)
-        occupancy_avg = np.random.uniform(low=0.01, high=1)
-        satisfaction_avg = np.random.uniform(low=0.01, high=1)
+        # ram_percentage = np.random.uniform(low=0.01, high=1)
+        # uc_percentage = np.random.uniform(low=0.01, high=1)
+        # occupancy_avg = np.random.uniform(low=0.01, high=1)
+        # satisfaction_avg = np.random.uniform(low=0.01, high=1)
         memory_usage = []
         uc_usage = []
         unsatisfied_users = 0
-        # ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, 100, 2)
+        ram_percentage, uc_percentage, occupancy_avg, satisfaction_avg = main(_lambda, 100, 2)
         for j in range(6, 9):
             simulation_data[index_row * 4][j] = ram_percentage
             simulation_data[index_row * 4 + 1][j] = uc_percentage
             simulation_data[index_row * 4 + 2][j] = occupancy_avg
             simulation_data[index_row * 4 + 3][j] = satisfaction_avg
-            # resetNBplacesLibres()
+            resetNBplacesLibres()
 
     print("this is simuationdata")
 
