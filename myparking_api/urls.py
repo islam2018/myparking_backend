@@ -47,6 +47,7 @@ urlpatterns = [
     path('pusher/broadcast/agent', views.BroadcastAgent.as_view()),
     path('pusher/notify/driver', views.SendDriverNotif.as_view()),
     path('pusher/broadcast/driver', views.BroadcastDriver.as_view()),
+    path('runTests/', views.TestParkingView.as_view({'get': 'runTests'})),
 
 ]
 
@@ -57,4 +58,4 @@ optimizeWithoutClustering() #but here no so
 # NU np WIN TNKSLHOM, mais f mode=1 it uses all ok
 #AFTER_SERVER_INIT()
 
-main_test_fun()
+#main_test_fun()

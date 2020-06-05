@@ -35,6 +35,7 @@ from model_optim.affectation import getRecomendedParkings
 from model_optim.forSimulationOnly import getTestRecommandations
 from model_optim.helpers.calculateDistance import calculateRouteInfo
 from model_optim.helpers.matrixFormat import Object, splitParkings
+from model_optim.simulation import main_test_fun
 from myparking import roles, beams_agent_client, beams_driver_client
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
@@ -848,3 +849,7 @@ class TestParkingView(viewsets.ModelViewSet):
                 return False
         except Exception:
             return True
+
+    def ruTests(self):
+        main_test_fun()
+        return Response("Model ran")
