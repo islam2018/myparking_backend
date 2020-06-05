@@ -282,10 +282,10 @@ def plotting(data):
 
 def main_test_fun():
 
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myparking.settings')
-    from django.core.wsgi import get_wsgi_application
-
-    application = get_wsgi_application()
+    # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myparking.settings')
+    # from django.core.wsgi import get_wsgi_application
+    #
+    # application = get_wsgi_application()
     from myparking_api.models import Parking, Automobiliste
     import pandas as pd
     optimizeWithoutClustering()
