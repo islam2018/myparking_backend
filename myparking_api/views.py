@@ -618,15 +618,15 @@ class CheckOut(APIView):
     authentication_classes = []
     def post(self, request):
         nonce_from_the_client = request.data["payment_method_nonce"]
-        result = braintree_gateway.transaction.sale({
-            "amount": "50.00",
-            "payment_method_nonce": nonce_from_the_client,
-            "device_data": None,
-            "options": {
-                "submit_for_settlement": True
-            }
-        })
-        return Response(result)
+        # result = braintree_gateway.transaction.sale({
+        #     "amount": "50.00",
+        #     "payment_method_nonce": nonce_from_the_client,
+        #     "device_data": None,
+        #     "options": {
+        #         "submit_for_settlement": True
+        #     }
+        # })
+        return Response({'detail':'this is just a placeholder for E\'dahbiya'})
 
 class SendAgentNotif(APIView):
     permission_classes = []
