@@ -35,7 +35,7 @@ from model_optim.affectation import getRecomendedParkings
 from model_optim.forSimulationOnly import getTestRecommandations
 from model_optim.helpers.calculateDistance import calculateRouteInfo
 from model_optim.helpers.matrixFormat import Object, splitParkings
-from myparking import roles, beams_agent_client, beams_driver_client
+from myparking import roles, beams_agent_client, beams_driver_client, braintree_gateway
 from myparking.HERE_API_KEY import HERE_API_KEY
 from myparking.roles import Driver
 from .models import Etage, Parking, Automobiliste, Equipement, Reservation, Paiment, Agent, ETAT_RESERVATION, \
@@ -607,7 +607,26 @@ class BeamsDriverAuth(APIView):
         beams_token = beams_driver_client.generate_token("driver"+id)
         return Response(beams_token)
 
+class BrainTreeView(APIView):
+    def get(self, request):
+        a_customer_id = request.query_params['customer_id']
+        client_token = braintree_gateway.client_token.generate({
+            "customer_id": a_customer_id
+        })
+        return Response(client_token)
 
+class CheckOut(APIView):
+    def post(self, request):
+        nonce_from_the_client = request.data["payment_method_nonce"]
+        result = braintree_gateway.transaction.sale({
+            "amount": "50.00",
+            "payment_method_nonce": nonce_from_the_client,
+            "device_data": None,
+            "options": {
+                "submit_for_settlement": True
+            }
+        })
+        return Response(result)
 
 class SendAgentNotif(APIView):
     permission_classes = []
@@ -834,3 +853,5 @@ class TestParkingView(viewsets.ModelViewSet):
                 return False
         except Exception:
             return True
+
+
