@@ -614,6 +614,8 @@ class BrainTreeView(APIView):
         return Response(client_token)
 
 class CheckOut(APIView):
+    permission_classes = []
+    authentication_classes = []
     def post(self, request):
         nonce_from_the_client = request.data["payment_method_nonce"]
         result = braintree_gateway.transaction.sale({
