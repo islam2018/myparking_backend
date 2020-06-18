@@ -610,9 +610,7 @@ class BeamsDriverAuth(APIView):
 class BrainTreeView(APIView):
     def get(self, request):
         a_customer_id = request.query_params['customer_id']
-        client_token = braintree_gateway.client_token.generate({
-            "customer_id": a_customer_id
-        })
+        client_token = braintree_gateway.client_token.generate()
         return Response(client_token)
 
 class CheckOut(APIView):
