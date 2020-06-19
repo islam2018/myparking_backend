@@ -4,6 +4,7 @@ from geopy.distance import great_circle
 from model_optim.persistance import saveUserAssignmentToCluster, hasReservation
 from myparking_api.models import Cluster, Automobiliste
 import numpy as np
+from model_optim.optimization import  optimize
 
 """ find a suitable cluster to the user (the closest cluster of parkings)
 """
@@ -36,12 +37,11 @@ def assignToClusters():
             saveUserAssignmentToCluster(int(idAutomobiliste), int(idCluster))
 
 def updateClusterAssignement(driverId):
-    queryUsers = Automobiliste.objects.filter(id=driverId).values_list()
-    user = pd.DataFrame.from_records(queryUsers,
-                                      columns=['idAutomobiliste', 'compte', 'idCompte', 'nom', 'numTel',
-                                               'prenom', 'position', 'auth', 'favoris'])
+    user = Automobiliste.objects.get(id=driverId)
+    old_id_cls = None
     try:
         cluster = Cluster.objects.get(drivers=driverId)
+        old_id_cls = cluster.idCluster
         cluster.drivers.remove(driverId)
         cluster.save()
     except:
@@ -57,10 +57,13 @@ def updateClusterAssignement(driverId):
         print(idcls, idAutomobiliste)
         saveUserAssignmentToCluster(int(idAutomobiliste), int(idcls))
     else:
-        crd = [user['position'][0], user['position'][1]]
+        crd = [user.position[0], user.position[1]]
         print(crd)
         affect = min(centers, key=lambda point: great_circle(point, crd).m)
         result = np.where(centers == affect)
         idCluster = dataframe.iloc[result[0][0]]['idCluster']
         print(idCluster, idAutomobiliste)
         saveUserAssignmentToCluster(int(idAutomobiliste), int(idCluster))
+
+        if old_id_cls != None: optimize(old_id_cls)
+        optimize(idCluster)
