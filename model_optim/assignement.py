@@ -2,7 +2,7 @@ import pandas as pd
 from geopy.distance import great_circle
 
 from model_optim.persistance import saveUserAssignmentToCluster, hasReservation
-from myparking_api.models import Cluster, Automobiliste
+from myparking_api.models import Cluster, Automobiliste, Porposition
 import numpy as np
 from model_optim.optimization import  optimize
 
@@ -65,5 +65,6 @@ def updateClusterAssignement(driverId):
         print(idCluster, idAutomobiliste)
         saveUserAssignmentToCluster(int(idAutomobiliste), int(idCluster))
 
-        if old_id_cls != None: optimize(old_id_cls)
-        optimize(idCluster)
+
+        # for cluster in dataframe.iloc:  # Run optimization on each cluster
+        #     if len(cluster['parkings']) > 0 and len(cluster['drivers']) > 0:

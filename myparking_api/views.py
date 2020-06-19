@@ -31,6 +31,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rolepermissions.checkers import has_role
 
+from model_optim import runModel
 from model_optim.affectation import getRecomendedParkings
 from model_optim.assignement import updateClusterAssignement
 from model_optim.forSimulationOnly import getTestRecommandations
@@ -754,7 +755,7 @@ class UpdateLocation(viewsets.ModelViewSet):
         au = Automobiliste.objects.get(id=driverId)
         au.position=[lat,long]
         au.save()
-        updateClusterAssignement(driverId)
+        runModel()
         return Response("Position mis à jour.")
 
 
