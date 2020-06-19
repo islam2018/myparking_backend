@@ -14,6 +14,8 @@ class Tarif(models.Model):
     duree = models.FloatField()
     prix = models.FloatField()
 
+    def __str__(self):
+        return "Tarif  :" + str(self.duree) +"->"+str(self.prix)
     @property
     def idTarif(self):
         return self.id
@@ -23,6 +25,9 @@ class Equipement(models.Model):
     idEquipement = models.AutoField(primary_key=True)
     designation = models.TextField()
     iconUrl = models.TextField()
+
+    def __str__(self):
+        return "Equipement  :" + self.designation
 
     @property
     def idEquipement(self):
@@ -35,6 +40,9 @@ class Horaire(models.Model):
     HeureOuverture = models.TimeField()
     HeureFermeture = models.TimeField()
 
+    def __str__(self):
+        return "Horaire  : Jour" + str(self.jour)+" Du: "+ str(self.HeureOuverture)+" Au: "+str(self.HeureFermeture)
+
     @property
     def idHoraire(self):
         return self.id
@@ -45,6 +53,9 @@ class Horaire(models.Model):
 class Etage(models.Model):
     idEtage = models.AutoField(primary_key=True)
     nbPlaces = models.IntegerField()
+
+    def __str__(self):
+        return "Etage :" + str(self.idEtage)
 
     @property
     def idEtage(self):
@@ -57,6 +68,8 @@ class Terme(models.Model):
     idTerme = models.AutoField(primary_key=True)
     contenu = models.TextField()
 
+    def __str__(self):
+        return "Terme  :" + str(self.idTerme)
     @property
     def idTerme(self):
         return self.id
@@ -76,6 +89,9 @@ class Paiment(models.Model):
     idPaiment = models.AutoField(primary_key=True)
     type = models.TextField()
     iconUrl = models.URLField()
+
+    def __str__(self):
+        return 'Type paiement: ' + self.type
 
     @property
     def idPaiment(self):
@@ -101,6 +117,9 @@ class Parking(models.Model):
     paiments = models.ArrayReferenceField(to=Paiment, on_delete=models.DO_NOTHING, blank=True)
     termes = models.ArrayReferenceField(to=Terme, on_delete=models.DO_NOTHING, blank=True)
 
+    def __str__(self):
+        return self.nom
+
     @property
     def idParking(self):
         return self.id
@@ -120,6 +139,9 @@ class Automobiliste(models.Model):
     favoris = models.ArrayReferenceField(to=Parking, on_delete=models.DO_NOTHING, blank=True)
     objects = DjongoManager()
 
+    def __str__(self):
+        return self.nom+ " "+self.prenom
+
     @property
     def idAutomobiliste(self):
         return self.id
@@ -132,6 +154,9 @@ class Agent(models.Model):
     auth = models.OneToOneField(to=User, on_delete=models.CASCADE, default=None, related_name='agentProfile')
     parking = models.ForeignKey(to=Parking, on_delete=models.CASCADE)
     objects = DjongoManager()
+
+    def __str__(self):
+        return self.nom + " " + self.prenom
 
     @property
     def idAgent(self):
@@ -167,6 +192,9 @@ class Reservation(models.Model):
     paiment = models.ForeignKey(to=Paiment, on_delete=models.CASCADE)
     paiementInstance = models.OneToOneField(to=PaiementInstance, on_delete=models.CASCADE, default=None)
     objects = DjongoManager()
+
+    def __str__(self):
+        return "Reservation :"+ str(self.idReservation)
 
     @property
     def idReservation(self):
