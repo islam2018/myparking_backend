@@ -1,4 +1,3 @@
-
 # from myparking.wsgi import *
 from apscheduler.schedulers.background import BackgroundScheduler
 from django.db import transaction
@@ -9,8 +8,7 @@ from model_optim.assignement import assignToClusters
 from model_optim.clustering import getParkingClusters
 from model_optim.optimization import optimize
 from model_optim.persistance import saveParkingsClusters, changeParkingDispo
-from myparking_api.models import  Cluster
-
+from myparking_api.models import Cluster
 
 
 def runModel():
@@ -22,16 +20,17 @@ def runModel():
                                               columns=['idCluster', 'label', 'centroid', 'reservations', 'parkings',
                                                        'drivers', 'propositions'])
         for cluster in dataframe.iloc:  # Run optimization on each cluster
-            optimize(cluster['idCluster'])
+            if len(cluster['parkings']) > 0 and len(cluster['drivers']) > 0:
+                optimize(cluster['idCluster'])
+
 
 def AFTER_SERVER_INIT():
-
-    print("********RUNNING MODEL AT ",now()," **********")
-    #Running this method each 5 minute to stay updated
-    #runModel()
+    print("********RUNNING MODEL AT ", now(), " **********")
+    # Running this method each 5 minute to stay updated
+    # runModel()
 
     scheduler = BackgroundScheduler()
-    scheduler.add_job(runModel, 'interval', minutes =3,max_instances=1)
+    scheduler.add_job(runModel, 'interval', minutes=3, max_instances=1)
     """For simulation purposes """
     # scheduler.add_job(changeParkingDispo, 'interval', minutes=1)
     """"""

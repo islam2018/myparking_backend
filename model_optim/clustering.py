@@ -19,7 +19,8 @@ def getParkingClusters():
     queryset = Parking.objects.all().values_list()
     dataframe = pd.DataFrame.from_records(queryset,columns=['ID','NB_ETAGE','NB_PLACES','NB_PLACES_LIBRES','4','5','6','LAT','LON','9','10','11','12','13','14'])
     # print(dataframe)
-    min_samples = dataframe['NB_PLACES'].mean().__int__()
+    # hna bdlt nb place b nb places klibres
+    min_samples = dataframe['NB_PLACES_LIBRES'].mean().__int__()
     matrix_distance = calculateDistance(dataframe, min_samples)
     earth_radius_km = 6371.0088
     epsilon = 1 / earth_radius_km
@@ -33,10 +34,9 @@ def getParkingClusters():
                 ).fit(matrix_distance, y=None,
                       sample_weight=dataframe['NB_PLACES_LIBRES'].to_numpy())
     cluster_labels = db.labels_
-    # print(cluster_labels)
+    print("clusttterr", cluster_labels)
     num_clusters = len(set(cluster_labels))
-    clusters = pd.Series([dataframe[cluster_labels == n] for n in range(num_clusters - 1)])
-
+    clusters = pd.Series([dataframe[cluster_labels == n] for n in range(num_clusters)])
 
     palette = sns.color_palette('deep', np.unique(cluster_labels).max() + 1)
     plot_kwds = {'alpha': 0.5, 's': 80, 'linewidths': 0}
@@ -44,9 +44,9 @@ def getParkingClusters():
 
     plt.scatter(crd[:, 0], crd[:, 1], c=c_colors, **plot_kwds)
 
-    #plt.show()
+    # plt.show()
 
-    saveParkingsClusters(clusters)  # Save into database
+    saveParkingsClusters(clusters, cluster_labels, dataframe)  # Save into database
 
     return (cluster_labels, clusters,crd)
 
