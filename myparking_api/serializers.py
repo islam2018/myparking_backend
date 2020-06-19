@@ -120,13 +120,16 @@ class ParkingSerializer(serializers.ModelSerializer):
             travelData = self.context['travelData']
             try:
                 walkingData = self.context['walkingData']
-                return {
-                    'travelDistance': travelData[0][index],
-                    'travelTime': travelData[1][index],
-                    'walkingDistance': walkingData[0][index],
-                    'walkingTime': walkingData[1][index],
-                    'canWalk': walkingData[0][index] < 2000
-                }
+                if (travelData[0][index]<0):
+                    return None
+                else:
+                    return {
+                        'travelDistance': travelData[0][index],
+                        'travelTime': travelData[1][index],
+                        'walkingDistance': walkingData[0][index],
+                        'walkingTime': walkingData[1][index],
+                        'canWalk': walkingData[0][index] < 2000
+                    }
             except Exception:
                 return None
         except Exception:

@@ -36,17 +36,15 @@ def getParkingClusters():
     # print(cluster_labels)
     num_clusters = len(set(cluster_labels))
     clusters = pd.Series([dataframe[cluster_labels == n] for n in range(num_clusters - 1)])
-
-
     palette = sns.color_palette('deep', np.unique(cluster_labels).max() + 1)
     plot_kwds = {'alpha': 0.5, 's': 80, 'linewidths': 0}
     c_colors = [palette[x] if x >= 0 else (0.0, 0.0, 0.0) for x in cluster_labels]
 
     plt.scatter(crd[:, 0], crd[:, 1], c=c_colors, **plot_kwds)
 
-    #plt.show()
+    # plt.show()
 
-    saveParkingsClusters(clusters)  # Save into database
+    saveParkingsClusters(clusters, cluster_labels, dataframe)  # Save into database
 
     return (cluster_labels, clusters,crd)
 

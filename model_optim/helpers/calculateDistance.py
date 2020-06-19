@@ -123,8 +123,12 @@ def calculateRouteInfo(queryParkings, start, destination):
 
             for i in matrix:
                 X = i['destinationIndex'] + offsetX
-                travelData[0][X] = i['summary']['distance']  # first is distance
-                travelData[1][X] = i['summary']['travelTime']
+                try:
+                    travelData[0][X] = i['summary']['distance']  # first is distance
+                    travelData[1][X] = i['summary']['travelTime']
+                except:
+                    travelData[0][X] = -1  # first is distance
+                    travelData[1][X] = -1
 
             walkingResponse = requests.get(
                 "https://matrix.route.ls.hereapi.com/routing/7.2/calculatematrix.json",
@@ -140,8 +144,12 @@ def calculateRouteInfo(queryParkings, start, destination):
             print(matrixW)
             for i in matrixW:
                 X = i['destinationIndex'] + offsetX
-                walkingData[0][X] = i['summary']['distance']  # first is distance
-                walkingData[1][X] = i['summary']['travelTime']
+                try:
+                    walkingData[0][X] = i['summary']['distance']  # first is distance
+                    walkingData[1][X] = i['summary']['travelTime']
+                except:
+                    walkingData[0][X] = -1  # first is distance
+                    walkingData[1][X] = -1
 
             offsetX = offsetX + 100
         return  (travelData, walkingData)

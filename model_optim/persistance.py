@@ -7,13 +7,14 @@ import random
 import pandas as pd
 from django.db import transaction
 from django.utils.timezone import now
+from geopy.distance import great_circle
 
 from model_optim.helpers.calculateCentroid import get_centermost_point
 from myparking_api.models import Cluster, Porposition, Reservation, Parking, ETAT_RESERVATION
 import numpy as np
 
 
-def saveParkingsClusters(clusters):
+def saveParkingsClusters(clusters, cluster_labels, dataframe):
     #delete all old clusters first
     Cluster.objects.all().delete()
     Porposition.objects.all().delete()
@@ -28,6 +29,29 @@ def saveParkingsClusters(clusters):
         cluster.centroid = center
         cluster.save()
         label = label+1
+
+    print(cluster_labels)
+    clusters_query = Cluster.objects.all().values_list()
+    clsts = pd.DataFrame.from_records(clusters_query,
+                                          columns=['idCluster', 'label', 'centroid', 'reservations', 'parkings',
+                                                   'drivers', 'propositions'])
+    centers_ = np.asarray(clsts[['centroid']])
+    for i in range(len(cluster_labels)):
+        label=cluster_labels[i]
+        print("label",label,i)
+        if label == -1:
+            crd = [dataframe.iloc[i]['LAT'], dataframe.iloc[i]['LON']]
+            print(crd)
+            affect = min(centers_, key=lambda point: great_circle(point, crd).m)
+            result = np.where(centers_ == affect)
+            idCluster = clsts.iloc[result[0][0]]['idCluster']
+            c = Cluster.objects.get(id=idCluster)
+            ids = list(c.parkings_id)
+            print(ids,"iiddss")
+            ids.append(int(dataframe.iloc[i]['ID']))
+            c.parkings_id = ids
+            c.save()
+            pass
 
 def saveUserAssignmentToCluster(idAutomobiliste, idCluster):
     cluster = Cluster.objects.get(id=idCluster)
@@ -49,7 +73,7 @@ def saveAffectations(dataframe, users, affectations, idCluster):
     for ix,iy in np.ndindex(array.shape):
         idParking = dataframe.iloc[iy]['ID']
         idAutomobiliste = users.iloc[ix]['idAutomobiliste']
-        if (int(array[ix,iy])==1):
+        if (array[ix,iy]>0):
             proposition = Porposition(automobiliste_id=idAutomobiliste, parking_id=idParking, value=array[ix,iy])
             proposition.save()
             props_id.append(proposition.id)
