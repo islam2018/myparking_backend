@@ -1,6 +1,8 @@
 import binascii
 import hashlib
 import hmac
+import braintree
+
 
 import cloudinary
 from pusher_push_notifications import PushNotifications
@@ -16,4 +18,13 @@ cloudinary.config(
   cloud_name = "hhpni8wqv",
   api_key = "771619568363457",
   api_secret = "1JDNVnXB4zFcV4wVOH0e4s8y3Po"
+)
+
+braintree_gateway = braintree.BraintreeGateway(
+    braintree.Configuration(
+        braintree.Environment.Sandbox,
+        merchant_id="kn7tmx8w7ztdyzyj",
+        public_key="j2jt6jgk5sj886n5",
+        private_key="f7cdae6c9012df9e5c38b21b7cebd5bd"
+    )
 )

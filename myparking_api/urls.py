@@ -44,6 +44,8 @@ urlpatterns = [
     path('pusher/broadcast/agent', views.BroadcastAgent.as_view()),
     path('pusher/notify/driver', views.SendDriverNotif.as_view()),
     path('pusher/broadcast/driver', views.BroadcastDriver.as_view()),
+    path('braintree/auth', views.BrainTreeView.as_view()),
+    path('braintree/checkout', views.CheckOut.as_view()),
 
 ]
 

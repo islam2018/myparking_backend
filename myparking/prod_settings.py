@@ -80,22 +80,22 @@ WSGI_APPLICATION = 'myparking.wsgi.application'
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'djongo',
-    #     'NAME': 'heroku_0c5hh5pp',
-    #     'HOST': 'mongodb://parking:parking0>@ds113495.mlab.com:13495/heroku_0c5hh5pp?retryWrites=false',
-    #     'USER': 'parking',
-    #     'PASSWORD': 'parking0'
-    #
-    # }
-    # for simulations
     'default': {
         'ENGINE': 'djongo',
-        'NAME': 'heroku_rznd846m',
-        'HOST': 'mongodb://parking:parking0@ds045297.mlab.com:45297/heroku_rznd846m?retryWrites=false',
+        'NAME': 'heroku_0c5hh5pp',
+        'HOST': 'mongodb://parking:parking0>@ds113495.mlab.com:13495/heroku_0c5hh5pp?retryWrites=false',
         'USER': 'parking',
         'PASSWORD': 'parking0'
+
     }
+    # for simulations
+    # 'default': {
+    #     'ENGINE': 'djongo',
+    #     'NAME': 'heroku_rznd846m',
+    #     'HOST': 'mongodb://parking:parking0@ds045297.mlab.com:45297/heroku_rznd846m?retryWrites=false',
+    #     'USER': 'parking',
+    #     'PASSWORD': 'parking0'
+    # }
 }
 
 # Password validation
