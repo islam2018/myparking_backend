@@ -42,7 +42,7 @@ def updateClusterAssignement(driverId):
     try:
         cluster = Cluster.objects.get(drivers=driverId)
         old_id_cls = cluster.idCluster
-        cluster.drivers.remove(driverId)
+        cluster.drivers_id.remove(driverId)
         cluster.save()
     except:
         pass
@@ -51,12 +51,14 @@ def updateClusterAssignement(driverId):
     dataframe = pd.DataFrame.from_records(clusters,
                                           columns=['idCluster', 'label', 'centroid', 'reservations', 'parkings',
                                                    'drivers', 'propositions'])
-    centers = np.asarray(dataframe[['centroid']])
+
     idcls = int(hasReservation(idAutomobiliste))
     if idcls > -1:
         print(idcls, idAutomobiliste)
         saveUserAssignmentToCluster(int(idAutomobiliste), int(idcls))
+
     else:
+        centers = np.asarray(dataframe[['centroid']])
         crd = [user.position[0], user.position[1]]
         print(crd)
         affect = min(centers, key=lambda point: great_circle(point, crd).m)
@@ -65,6 +67,8 @@ def updateClusterAssignement(driverId):
         print(idCluster, idAutomobiliste)
         saveUserAssignmentToCluster(int(idAutomobiliste), int(idCluster))
 
-
+        old_props = Porposition.objects.filter(automobiliste=driverId)
+        optimize(idCluster)
+        old_props.delete()
         # for cluster in dataframe.iloc:  # Run optimization on each cluster
         #     if len(cluster['parkings']) > 0 and len(cluster['drivers']) > 0:

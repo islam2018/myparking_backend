@@ -50,7 +50,7 @@ urlpatterns = [
 ]
 
 # Run the model after server is
-#runModel() # hna 3edna a model (clusters are prepared in database)
+runModel() # hna 3edna a model (clusters are prepared in database)
 #optimizeWithoutClustering() #but here no so
 # i can't do small number lol
 # NU np WIN TNKSLHOM, mais f mode=1 it uses all ok

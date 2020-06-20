@@ -249,10 +249,10 @@ class Cluster(models.Model):
     idCluster = models.AutoField(primary_key=True)
     label = models.TextField()
     centroid = models.ListField()
-    reservations = models.ArrayReferenceField(to=Reservation, on_delete=models.CASCADE)
+    reservations = models.ArrayReferenceField(to=Reservation)
     parkings = models.ArrayReferenceField(to=Parking, on_delete=models.CASCADE)
     drivers = models.ArrayReferenceField(to=Automobiliste, on_delete=models.CASCADE)
-    propositions = models.ArrayReferenceField(to=Porposition, on_delete=models.CASCADE)
+    propositions = models.ArrayReferenceField(to=Porposition)
     objects = DjongoManager()
 
     @property
