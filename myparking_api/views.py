@@ -197,7 +197,7 @@ class FilterInfosView(mixins.ListModelMixin,GenericViewSet):
             except Exception:
                 destination = None
 
-            queryParkings = getRecomendedParkings(request.query_params['automobiliste'])
+            (queryParkings,ids,weights) = getRecomendedParkings(request.query_params['automobiliste'])
             (travelData, walkingData) = calculateRouteInfo(queryParkings, start, destination)
             parkings = ParkingSerializer(queryParkings, many=True, context={
                 'request': request, 'walkingData': walkingData,
