@@ -755,7 +755,7 @@ class UpdateLocation(viewsets.ModelViewSet):
         au = Automobiliste.objects.get(id=driverId)
         au.position=[lat,long]
         au.save()
-        updateClusterAssignement(driverId)
+        #updateClusterAssignement(driverId)
         return Response("Position mis à jour.")
 
 
