@@ -68,9 +68,10 @@ def updateClusterAssignement(driverId):
         print(idCluster, idAutomobiliste)
         saveUserAssignmentToCluster(int(idAutomobiliste), int(idCluster))
 
-        old_props = Porposition.objects.filter(automobiliste=driverId)
-        old_props.delete()
+        # old_props = Porposition.objects.filter(automobiliste=driverId)
+        old_props = list(Porposition.objects.filter(automobiliste=3).values_list('id', flat=True))
         optimize(idCluster)
+        Porposition.objects.filter(id__in=old_props).delete()
 
         # for cluster in dataframe.iloc:  # Run optimization on each cluster
         #     if len(cluster['parkings']) > 0 and len(cluster['drivers']) > 0:
