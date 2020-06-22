@@ -54,6 +54,7 @@ def updateClusterAssignement(driverId):
 
     idcls = int(hasReservation(idAutomobiliste))
     if idcls > -1:
+        print("existing cluster for user")
         print(idcls, idAutomobiliste)
         saveUserAssignmentToCluster(int(idAutomobiliste), int(idcls))
 
@@ -68,7 +69,8 @@ def updateClusterAssignement(driverId):
         saveUserAssignmentToCluster(int(idAutomobiliste), int(idCluster))
 
         old_props = Porposition.objects.filter(automobiliste=driverId)
-        optimize(idCluster)
         old_props.delete()
+        optimize(idCluster)
+
         # for cluster in dataframe.iloc:  # Run optimization on each cluster
         #     if len(cluster['parkings']) > 0 and len(cluster['drivers']) > 0:

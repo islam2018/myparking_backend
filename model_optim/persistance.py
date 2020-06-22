@@ -20,7 +20,7 @@ def saveParkingsClusters(clusters, cluster_labels, dataframe):
     Porposition.objects.all().delete()
 
     label = 0
-    print ("clusInPers", clusters)
+    print("clusInPers", clusters)
     for c in clusters:
         cluster = Cluster(label=label)
         cluster.parkings_id = c['ID'].to_list()
@@ -74,10 +74,15 @@ def saveUserAssignmentToCluster(idAutomobiliste, idCluster):
 def saveAffectations(dataframe, users, affectations, idCluster):
     cluster = Cluster.objects.get(id=idCluster)
     array = np.asarray(affectations)
+    print("array", array)
     props_id = []
+
     for ix, iy in np.ndindex(array.shape):
+
         idParking = dataframe.iloc[iy]['ID']
         idAutomobiliste = users.iloc[ix]['idAutomobiliste']
+        print("prop save:")
+        print(idParking, idAutomobiliste)
         # <<<<<<< HEAD
         #         if (array[ix,iy]>0):  #stupid ana
         #             proposition = Porposition(automobiliste_id=idAutomobiliste, parking_id=idParking,
@@ -87,6 +92,7 @@ def saveAffectations(dataframe, users, affectations, idCluster):
         # wht?  whtttt
         # siyi ektb hna
         if (array[ix, iy] > 0):
+            print("innn")
             proposition = Porposition(automobiliste_id=idAutomobiliste, parking_id=idParking, value=array[ix, iy])
             proposition.save()
             props_id.append(proposition.id)

@@ -128,6 +128,6 @@ def optimize(idCluster):
     else:
         answer = "no solution"
     # print(x)
-    print(affectations)
+    print("affectations", affectations)
     saveAffectations(dataframe, users, affectations, cluster['idCluster'])
     return affectations

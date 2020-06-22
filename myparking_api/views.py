@@ -47,11 +47,13 @@ from .serializers import EtageSerializer, ParkingSerializer, AutomobilisteSerial
     SignalementSerializer, MessageSerializer
 from pusher_push_notifications import PushNotifications
 
+
 class EquipementView(viewsets.ModelViewSet):
     queryset = Equipement.objects.all()
     serializer_class = EquipementSerializer
     permission_classes = []
     authentication_classes = []
+
 
 class PaiementView(viewsets.ModelViewSet):
     queryset = Paiment.objects.all()
@@ -66,10 +68,9 @@ class ParkingView(viewsets.ModelViewSet):
     permission_classes = []
     authentication_classes = []
 
-
     def list(self, request, *args, **kwargs):
         try:
-            (queryParkings,ids,weights) = getRecomendedParkings(request.query_params['automobiliste'])
+            (queryParkings, ids, weights) = getRecomendedParkings(request.query_params['automobiliste'])
 
             try:
                 start = request.query_params['start']
@@ -85,13 +86,12 @@ class ParkingView(viewsets.ModelViewSet):
             parkings = ParkingSerializer(queryParkings, many=True, context={
                 'request': request, 'walkingData': walkingData,
                 'travelData': travelData}).data
-            res = parkings.sort(key=lambda p: weights[ids.index(p['idParking'])]) # c bon sah? hhhoui truni? att k
+            res = parkings.sort(key=lambda p: weights[ids.index(p['idParking'])])  # c bon sah? hhhoui truni? att k
 
 
 
         except Parking.DoesNotExist:
             raise Http404
-
 
         try:
             minDistance = request.query_params['minDistance']
@@ -113,8 +113,8 @@ class ParkingView(viewsets.ModelViewSet):
             equipements_id = request.query_params['equipements'].split(',')
         except Exception:
             equipements_id = []
-        print(minDistance,maxDistance, minPrice, maxPrice,equipements_id)
-        if(minDistance != 0 or maxDistance!=1000000000 and minPrice!=0 or maxPrice!=0 or equipements_id!=[]):
+        print(minDistance, maxDistance, minPrice, maxPrice, equipements_id)
+        if (minDistance != 0 or maxDistance != 1000000000 and minPrice != 0 or maxPrice != 0 or equipements_id != []):
             res = filter(lambda parking: self.applyFilter(parking, {
                 'minDistance': int(minDistance),
                 'maxDistance': int(maxDistance),
@@ -124,9 +124,7 @@ class ParkingView(viewsets.ModelViewSet):
             }), parkings)
         return Response(res)
 
-
-
-    def applyFilter(self,parking, filters):
+    def applyFilter(self, parking, filters):
         try:
             distance = int(parking['routeInfo']['walkingDistance'])
             minPrice = filters['minPrice']
@@ -135,18 +133,18 @@ class ParkingView(viewsets.ModelViewSet):
             hasPrice = False
             if filters['minDistance'] <= distance <= filters['maxDistance']:
                 for tarif in parking['tarifs']:
-                    price=int(tarif['prix'])
+                    price = int(tarif['prix'])
                     if minPrice <= price <= maxPrice:
                         hasPrice = True
                 if hasPrice:
                     hasAllEquip = True
                     for equip in equipements:
-                        hasEquip=False
+                        hasEquip = False
                         for equipPark in parking['equipements']:
-                            if int(equipPark['idEquipement'])==int(equip):
-                                hasEquip=True
-                        if (hasEquip==False):
-                            hasAllEquip=False
+                            if int(equipPark['idEquipement']) == int(equip):
+                                hasEquip = True
+                        if (hasEquip == False):
+                            hasAllEquip = False
                     if hasAllEquip:
                         return True
                     else:
@@ -158,13 +156,10 @@ class ParkingView(viewsets.ModelViewSet):
         except Exception:
             return True
 
-
-
     # def getOneParking(self, request, idParking=None):
     #     parking = get_object_or_404(self.queryset, id=idParking)
     #     serializer = ParkingSerializer(parking, context={'request': request})
     #     return Response(serializer.data)
-
 
     # def get_permissions(self):
     #     permission_classes = []
@@ -177,11 +172,13 @@ class ParkingView(viewsets.ModelViewSet):
     #         permission_classes = [IsDriver]
     #     return [permission() for permission in permission_classes]
 
-class FilterInfosView(mixins.ListModelMixin,GenericViewSet):
+
+class FilterInfosView(mixins.ListModelMixin, GenericViewSet):
     queryset = Equipement.objects.all()
     serializer_class = EquipementSerializer
     permission_classes = []
     authentication_classes = []
+
     def list(self, request, *args, **kwargs):
         try:
             equipements = EquipementSerializer(self.queryset, many=True).data
@@ -197,7 +194,7 @@ class FilterInfosView(mixins.ListModelMixin,GenericViewSet):
             except Exception:
                 destination = None
 
-            (queryParkings,ids,weights) = getRecomendedParkings(request.query_params['automobiliste'])
+            (queryParkings, ids, weights) = getRecomendedParkings(request.query_params['automobiliste'])
             (travelData, walkingData) = calculateRouteInfo(queryParkings, start, destination)
             parkings = ParkingSerializer(queryParkings, many=True, context={
                 'request': request, 'walkingData': walkingData,
@@ -233,6 +230,7 @@ class FilterInfosView(mixins.ListModelMixin,GenericViewSet):
             }
         })
 
+
 class ReservationView(viewsets.ModelViewSet):
     queryset = Reservation.objects.all()
     permission_classes = []
@@ -258,11 +256,11 @@ class ReservationView(viewsets.ModelViewSet):
                 "2": response['dateEntreePrevue'],
                 "3": response['dateSortiePrevue'],
                 "4": response['parking']['idParking'],
-                "5": response['automobiliste']['nom']+";"+response['automobiliste']['prenom'],
+                "5": response['automobiliste']['nom'] + ";" + response['automobiliste']['prenom'],
             }
             content = json.dumps(content_, cls=DjangoJSONEncoder)
             content_bytes = content.encode('ascii')
-            #base64_bytes = base64.b64encode(content_bytes)
+            # base64_bytes = base64.b64encode(content_bytes)
             # content_bytes = content.encode('utf-8')
             base64_message = binascii.hexlify(content_bytes)
 
@@ -287,13 +285,13 @@ class ReservationView(viewsets.ModelViewSet):
         try:
             automobiliste_id = request.query_params['automobiliste_id']
             query = Reservation.objects.filter(automobiliste_id=automobiliste_id)
-            data = ReservationSerializer(query,many=True,context={'request': request}).data
+            data = ReservationSerializer(query, many=True, context={'request': request}).data
             return Response(data)
         except Exception:
             print("catched exception")
             return super().list(request, *args, **kwargs)
 
-    def checkQR(self,request, code):
+    def checkQR(self, request, code):
         try:
             reservation = Reservation.objects.get(hashId=code)
             data = ReservationSerializer(reservation, many=False).data
@@ -307,7 +305,7 @@ class ReservationView(viewsets.ModelViewSet):
                 'detail': 'Internal server error'
             }, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def validateQR(self, request,id):
+    def validateQR(self, request, id):
         try:
             reservation = Reservation.objects.get(id=id)
             if reservation.state == ETAT_RESERVATION.EN_COURS.value:
@@ -325,13 +323,13 @@ class ReservationView(viewsets.ModelViewSet):
                     "detail": "Réservation déja refusée"
                 }, status.HTTP_409_CONFLICT)
             reservation.save()
-            return Response(ReservationSerializer(reservation,many=False).data)
+            return Response(ReservationSerializer(reservation, many=False).data)
         except Http404:
             return Response({
                 "detail": "Réservation non trouvée"
             }, status.HTTP_404_NOT_FOUND)
 
-    def declineQR(self, request,id):
+    def declineQR(self, request, id):
         try:
             reservation = Reservation.objects.get(id=id)
             if reservation.state == ETAT_RESERVATION.EN_COURS.value:
@@ -351,7 +349,7 @@ class ReservationView(viewsets.ModelViewSet):
                 "detail": "Réservation non trouvée"
             }, status.HTTP_404_NOT_FOUND)
 
-    def history(self,request):
+    def history(self, request):
         try:
             id_parking = request.query_params['parking']
             date = dt.strptime(request.query_params['date'], '%d-%m-%Y')
@@ -361,8 +359,8 @@ class ReservationView(viewsets.ModelViewSet):
             nbReservations = Reservation.objects.filter(parking_id=id_parking,
                                                         dateReservation__range=(date, end_date)).count()
             nbReservationsValidee = Reservation.objects.filter(parking_id=id_parking,
-                                                        state__in=valideStates,
-                                                        dateReservation__range=(date, end_date)).count()
+                                                               state__in=valideStates,
+                                                               dateReservation__range=(date, end_date)).count()
             nbReservationsRefusee = Reservation.objects.filter(parking_id=id_parking,
                                                                state=ETAT_RESERVATION.REFUSEE.value,
                                                                dateReservation__range=(date, end_date)).count()
@@ -390,6 +388,7 @@ class RegistrationAgentView(viewsets.ModelViewSet):
     permission_classes = []
     authentication_classes = []
     serializer_class = AgentSerializer
+
 
 class FavorisView(viewsets.ModelViewSet):
     queryset = Automobiliste.objects.all()
@@ -431,7 +430,7 @@ class FavorisView(viewsets.ModelViewSet):
         try:
             idAutomobiliste = request.query_params['automobiliste']
             query = Automobiliste.objects.get(id=idAutomobiliste)
-            serializer = FavorisSerializer(query,context={'request': request})
+            serializer = FavorisSerializer(query, context={'request': request})
             serializer.delete(request.data)
             return Response(serializer.data)
         except Http404:
@@ -453,7 +452,7 @@ class DriverLoginViewJWT(TokenObtainPairView):
             fbId = request.data['driverProfile']['idCompte']
         except Exception:
             fromFacebook = False
-            fbId=0
+            fbId = 0
         if not fromFacebook:
             response = super().post(request, *args, **kwargs)
             user = get_user_model().objects.get(username=request.data[get_user_model().USERNAME_FIELD])
@@ -483,11 +482,6 @@ class DriverLoginViewJWT(TokenObtainPairView):
         return response
 
 
-
-
-
-
-
 class AgentLoginViewJWT(TokenObtainPairView):
     user_serializer_class = AgentSerializer
 
@@ -496,7 +490,7 @@ class AgentLoginViewJWT(TokenObtainPairView):
 
         if response.status_code == status.HTTP_200_OK:
             user = get_user_model().objects.get(username=request.data[get_user_model().USERNAME_FIELD])
-            if ((not has_role(user, IsAdminUser)) and has_role(user,roles.Agent)):
+            if ((not has_role(user, IsAdminUser)) and has_role(user, roles.Agent)):
                 serialized_user = self.user_serializer_class(user)
                 response.data.update(serialized_user.data)
             else:
@@ -505,6 +499,7 @@ class AgentLoginViewJWT(TokenObtainPairView):
                 }, status.HTTP_403_FORBIDDEN)
 
         return response
+
 
 class AdminLoginViewJWT(TokenObtainPairView):
     user_serializer_class = AdminSerializer
@@ -523,12 +518,13 @@ class AdminLoginViewJWT(TokenObtainPairView):
                 response.data.update(serialized_user.data)
         return response
 
+
 class SearchView(APIView):
-    #permission_classes = [IsDriver]
+    # permission_classes = [IsDriver]
     def get(self, request):
         query = None
         try:
-            query =  request.query_params['query']
+            query = request.query_params['query']
         except Exception:
             return Response({
                 "detail": "Bad request parameters"
@@ -542,7 +538,7 @@ class SearchView(APIView):
                     'in': '36.0998,3.2953;r=300000',
                     'q': query
                 }
-                response = requests.get(url,params,headers=headers)
+                response = requests.get(url, params, headers=headers)
                 return Response(json.loads(response.text))
             else:
                 return Response({
@@ -552,6 +548,7 @@ class SearchView(APIView):
             return Response({
                 "detail": "Request error"
             }, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class AgentView(APIView):
     # permission_classes = [IsDriver]
@@ -563,7 +560,8 @@ class AgentView(APIView):
         date = dt.strptime(request.query_params['date'], '%d-%m-%Y')
         end_date = date + timedelta(days=1)
         print(date, end_date)
-        nbReservations = Reservation.objects.filter(parking_id=id_parking,dateReservation__range=(date,end_date)).count()
+        nbReservations = Reservation.objects.filter(parking_id=id_parking,
+                                                    dateReservation__range=(date, end_date)).count()
 
         return Response(
             {
@@ -576,25 +574,27 @@ class AgentView(APIView):
             }
         )
 
+
 class SignalementView(viewsets.ModelViewSet):
     permission_classes = []
     authentication_classes = []
-    def create(self, request, *args, **kwargs):
 
+    def create(self, request, *args, **kwargs):
         data = json.loads(request.data['body'])
         date_debut = datetime.strptime(data["date_debut"], '%d-%m-%Y %H:%M')
         date_fin = datetime.strptime(data["date_fin"], '%d-%m-%Y %H:%M')
         idAgent = data["agent"]
         type = data["type"]
         description = data["description"]
-        links =[]
+        links = []
         for f in self.request.FILES.getlist('file'):
-             res = cloudinary.uploader.upload(f, folder='attached', resource_type='raw')
-             links.append(res['url'])
-        signalement = Signalement(description=description,dateDebut=date_debut,dateFin=date_fin,type=type,attachedFiles=links)
+            res = cloudinary.uploader.upload(f, folder='attached', resource_type='raw')
+            links.append(res['url'])
+        signalement = Signalement(description=description, dateDebut=date_debut, dateFin=date_fin, type=type,
+                                  attachedFiles=links)
         signalement.agent_id = idAgent
         signalement.save()
-        result = SignalementSerializer(signalement,many=False).data
+        result = SignalementSerializer(signalement, many=False).data
         return Response(result)
         pass
 
@@ -602,13 +602,16 @@ class SignalementView(viewsets.ModelViewSet):
 class BeamsAgentAuth(APIView):
     def get(self, request):
         id = request.query_params['user_id']
-        beams_token = beams_agent_client.generate_token("agent"+id)
+        beams_token = beams_agent_client.generate_token("agent" + id)
         return Response(beams_token)
+
+
 class BeamsDriverAuth(APIView):
     def get(self, request):
         id = request.query_params['user_id']
-        beams_token = beams_driver_client.generate_token("driver"+id)
+        beams_token = beams_driver_client.generate_token("driver" + id)
         return Response(beams_token)
+
 
 class BrainTreeView(APIView):
     def get(self, request):
@@ -616,9 +619,11 @@ class BrainTreeView(APIView):
         client_token = braintree_gateway.client_token.generate()
         return Response(client_token)
 
+
 class CheckOut(APIView):
     permission_classes = []
     authentication_classes = []
+
     def post(self, request):
         nonce_from_the_client = request.data["payment_method_nonce"]
         # result = braintree_gateway.transaction.sale({
@@ -629,17 +634,19 @@ class CheckOut(APIView):
         #         "submit_for_settlement": True
         #     }
         # })
-        return Response({'detail':'this is just a placeholder for E\'dahbiya'})
+        return Response({'detail': 'this is just a placeholder for E\'dahbiya'})
+
 
 class SendAgentNotif(APIView):
     permission_classes = []
     authentication_classes = []
-    def post(self,request):
+
+    def post(self, request):
         title = request.data['title']
         message = request.data['body']
         content = request.data['content']
         user_id = request.data['user_id']
-        aav= "agent"+user_id  ## fix this LATER
+        aav = "agent" + user_id  ## fix this LATER
         response = beams_agent_client.publish_to_users(
             user_ids=[aav],
             publish_body={
@@ -660,10 +667,12 @@ class SendAgentNotif(APIView):
         )
         return Response(response)
 
+
 class BroadcastAgent(APIView):
     permission_classes = []
     authentication_classes = []
-    def post(self,request):
+
+    def post(self, request):
         title = request.data['title']
         message = request.data['body']
         content = request.data['content']
@@ -688,15 +697,17 @@ class BroadcastAgent(APIView):
         )
         return Response(response)
 
+
 class SendDriverNotif(APIView):
     permission_classes = []
     authentication_classes = []
-    def post(self,request):
+
+    def post(self, request):
         title = request.data['title']
         message = request.data['body']
         content = request.data['content']
         user_id = request.data['user_id']
-        aav= "driver"+user_id  ## fix this LATER
+        aav = "driver" + user_id  ## fix this LATER
         response = beams_driver_client.publish_to_users(
             user_ids=[aav],
             publish_body={
@@ -717,10 +728,12 @@ class SendDriverNotif(APIView):
         )
         return Response(response)
 
+
 class BroadcastDriver(APIView):
     permission_classes = []
     authentication_classes = []
-    def post(self,request):
+
+    def post(self, request):
         title = request.data['title']
         message = request.data['body']
         content = request.data['content']
@@ -745,17 +758,22 @@ class BroadcastDriver(APIView):
         )
         return Response(response)
 
+
 class UpdateLocation(viewsets.ModelViewSet):
     permission_classes = []
     authentication_classes = []
+
     def updateDriverLocation(self, request):
         driverId = request.data['driverId']
         lat = request.data['lat']
         long = request.data['long']
+        forSearch = request.data['forSearch']
         au = Automobiliste.objects.get(id=driverId)
-        au.position=[lat,long]
+        au.position = [lat, long]
         au.save()
-        #updateClusterAssignement(driverId)
+        print("run it",forSearch)
+        if forSearch:
+            updateClusterAssignement(driverId)
         return Response("Position mis à jour.")
 
 
@@ -771,16 +789,18 @@ class TestParkingView(viewsets.ModelViewSet):
     serializer_class = ParkingSerializer
     permission_classes = []
     authentication_classes = []
+
     def withMode(self, request, *args, **kwargs):
         try:
             mode = int(request.query_params['mode'])
             print(mode)
-            #hadi the view ndjibo recommadntaions,
-            #if mode=0 il utilise l'objet propositons(f la bdd)
-            #if mode1 il utilise variable globale fiha (300*100) maderthach f bdd psk pour les tests berk
-            #if mod=2 yraj2 ga3 les arpkings
-            (queryParkings,ids,weights) =getTestRecommandations(int(request.query_params['automobiliste']),int(mode))
-            #apres ma yradj2 il filtre
+            # hadi the view ndjibo recommadntaions,
+            # if mode=0 il utilise l'objet propositons(f la bdd)
+            # if mode1 il utilise variable globale fiha (300*100) maderthach f bdd psk pour les tests berk
+            # if mod=2 yraj2 ga3 les arpkings
+            (queryParkings, ids, weights) = getTestRecommandations(int(request.query_params['automobiliste']),
+                                                                   int(mode))
+            # apres ma yradj2 il filtre
             try:
                 start = request.query_params['start']
             except Exception:
@@ -789,12 +809,12 @@ class TestParkingView(viewsets.ModelViewSet):
                 destination = request.query_params['destination']
             except Exception:
                 destination = None
-            #(travelData, walkingData) = calculateRouteInfo(queryParkings, start, destination)
+            # (travelData, walkingData) = calculateRouteInfo(queryParkings, start, destination)
             # hadi 9otlek dertha en comment bech mayehsbch routeIfo
             parkings = ParkingSerializer(queryParkings, many=True, context={
                 'request': request, }).data
             # copy it melhih wher e?
-            res = parkings.sort(key=lambda p: weights[ids.index(p['idParking'])]) # c bon sah? hhhoui truni? att k
+            res = parkings.sort(key=lambda p: weights[ids.index(p['idParking'])])  # c bon sah? hhhoui truni? att k
 
 
         except Parking.DoesNotExist:
@@ -803,8 +823,8 @@ class TestParkingView(viewsets.ModelViewSet):
         # f our tests, sah rana we update them later, but comme each user rah ydir one request ma kch fyada nn?
         # mefhatmch bsah m bekri kona using berk his positino, psk amdakhlnahc destiantion fl modele
         # ahhhh sah? oui 9olna ndakhloha mais ma3refnach (koa mazel ma kheana bien), mais f clustring it's using his positon, li rahi
-        #f la bdd and it's updated a, mala lzm w uodate la bdd b the random positions kbl ma nruniw request
-        #raki dayertha ani dyrtha kbel?o
+        # f la bdd and it's updated a, mala lzm w uodate la bdd b the random positions kbl ma nruniw request
+        # raki dayertha ani dyrtha kbel?o
         try:
             minDistance = request.query_params['minDistance']
         except Exception:
@@ -836,7 +856,7 @@ class TestParkingView(viewsets.ModelViewSet):
             }), parkings)
         return Response(res)
 
-    def applyFilter(self,parking, filters):
+    def applyFilter(self, parking, filters):
         try:
             distance = int(parking['routeInfo']['walkingDistance'])
             minPrice = filters['minPrice']
@@ -845,18 +865,18 @@ class TestParkingView(viewsets.ModelViewSet):
             hasPrice = False
             if filters['minDistance'] <= distance <= filters['maxDistance']:
                 for tarif in parking['tarifs']:
-                    price=int(tarif['prix'])
+                    price = int(tarif['prix'])
                     if minPrice <= price <= maxPrice:
                         hasPrice = True
                 if hasPrice:
                     hasAllEquip = True
                     for equip in equipements:
-                        hasEquip=False
+                        hasEquip = False
                         for equipPark in parking['equipements']:
-                            if int(equipPark['idEquipement'])==int(equip):
-                                hasEquip=True
-                        if (hasEquip==False):
-                            hasAllEquip=False
+                            if int(equipPark['idEquipement']) == int(equip):
+                                hasEquip = True
+                        if (hasEquip == False):
+                            hasAllEquip = False
                     if hasAllEquip:
                         return True
                     else:
@@ -867,5 +887,3 @@ class TestParkingView(viewsets.ModelViewSet):
                 return False
         except Exception:
             return True
-
-
