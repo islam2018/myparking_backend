@@ -120,7 +120,7 @@ class ParkingSerializer(serializers.ModelSerializer):
             travelData = self.context['travelData']
             try:
                 walkingData = self.context['walkingData']
-                if (travelData[0][index]<0):
+                if (travelData[0][index]<0 or travelData[1][index]<0 or walkingData[0][index]<0 or walkingData[1][index]<0 ):
                     return None
                 else:
                     return {
