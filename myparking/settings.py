@@ -82,12 +82,12 @@ WSGI_APPLICATION = 'myparking.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
-        'NAME': 'heroku_2qj7g54x',
-        'HOST': 'mongodb://myparking:myparking123@ds135514.mlab.com:35514/heroku_2qj7g54x?retryWrites=false',
-        'USER': 'myparking',
-        'PASSWORD': 'myparking123',
+        'NAME': 'heroku_nt4fr0sb',
+        'HOST': 'mongodb://user_db:pass123@ds033259.mlab.com:33259/heroku_nt4fr0sb?retryWrites=false',
+        'USER': 'user_db',
+        'PASSWORD': 'pass123',
         'TEST': {
-            'NAME': 'heroku_2qj7g54x'
+            'NAME': 'heroku_nt4fr0sb'
         }
     },
     # for simulations
