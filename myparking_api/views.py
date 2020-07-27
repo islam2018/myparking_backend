@@ -819,12 +819,7 @@ class TestParkingView(viewsets.ModelViewSet):
 
         except Parking.DoesNotExist:
             raise Http404
-        # hna il filtre pour min , max ,etx fhamti ,? les filtres fdhmt , mzlha mkltni start and destination kichghol ma rahmch used
-        # f our tests, sah rana we update them later, but comme each user rah ydir one request ma kch fyada nn?
-        # mefhatmch bsah m bekri kona using berk his positino, psk amdakhlnahc destiantion fl modele
-        # ahhhh sah? oui 9olna ndakhloha mais ma3refnach (koa mazel ma kheana bien), mais f clustring it's using his positon, li rahi
-        # f la bdd and it's updated a, mala lzm w uodate la bdd b the random positions kbl ma nruniw request
-        # raki dayertha ani dyrtha kbel?o
+
         try:
             minDistance = request.query_params['minDistance']
         except Exception:

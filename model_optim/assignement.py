@@ -53,12 +53,14 @@ def updateClusterAssignement(driverId):
                                                    'drivers', 'propositions'])
 
     idcls = int(hasReservation(idAutomobiliste))
-    if idcls > -1:
-        print("existing cluster for user")
-        print(idcls, idAutomobiliste)
-        saveUserAssignmentToCluster(int(idAutomobiliste), int(idcls))
-
-    else:
+    # if idcls > -1:
+    #     print("existing cluster for user")
+    #     print(idcls, idAutomobiliste)
+    #     saveUserAssignmentToCluster(int(idAutomobiliste), int(idcls))
+    #
+    # else:
+    ## to remove later
+    if True:
         centers = np.asarray(dataframe[['centroid']])
         crd = [user.position[0], user.position[1]]
         print(crd)
